@@ -1,0 +1,18 @@
+{
+  "name": "front",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "format": "yarn prettier --write src && yarn run elm-format src --yes && ",
+    "dev": "yarn parcel src/index.html --public-url /public"
+  },
+  "devDependencies": {
+    "@parcel/transformer-elm": "2.13.2",
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.7",
+    "parcel": "^2.13.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}
