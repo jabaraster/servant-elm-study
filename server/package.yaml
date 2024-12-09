@@ -1,10 +1,10 @@
-name:                servant-sandbox
+name:                servant-elm-study
 version:             0.1.0.0
-github:              "githubuser/servant-sandbox"
+github:              "jabaraster/servant-elm-study"
 license:             BSD-3-Clause
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2024 Author name here"
+author:              "jabaraster"
+maintainer:          "jabaraster"
+copyright:           "2024 jabaraster"
 
 # extra-source-files:
 # - README.md
@@ -17,7 +17,7 @@ copyright:           "2024 Author name here"
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/servant-sandbox#readme>
+description:         Please see the README on GitHub at <https://github.com/jabaraster/servant-elm-study#readmy>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -57,10 +57,10 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - base
-    - servant-sandbox
+    - servant-elm-study
 
 tests:
-  servant-sandbox-test:
+  servant-elm-study-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -69,7 +69,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - base
-    - servant-sandbox
+    - servant-elm-study
     - hspec
     - hspec-wai
     - hspec-wai-json

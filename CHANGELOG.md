@@ -1,4 +1,4 @@
-# Changelog for `servant-sandbox`
+# Changelog for `servant-elm-study`
 
 All notable changes to this project will be documented in this file.
 
