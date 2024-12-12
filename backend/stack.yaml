@@ -63,5 +63,9 @@ packages:
 # extra-include-dirs: [/path/to/dir]
 # extra-lib-dirs: [/path/to/dir]
 #
-# Allow a newer minor version of GHC than the snapshot specifies
+# Allow a newer minor version of GHC than the snapshot specifiesgg
 # compiler-check: newer-minor
+
+docker:
+  repo: udemir/utdemir/ghc-musl:v25-ghc944
+  enable: false

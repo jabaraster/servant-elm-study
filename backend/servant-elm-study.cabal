@@ -22,7 +22,6 @@ source-repository head
 library
   exposed-modules:
       App
-      DataStore
   other-modules:
       Paths_servant_elm_study
   autogen-modules:
@@ -32,14 +31,12 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       aeson
-    , amazonka
-    , amazonka-dynamodb
     , base >=4.7 && <5
     , bytestring
     , http-media
-    , lucid
     , servant
     , servant-server
+    , text
     , time
     , wai
     , warp
@@ -56,15 +53,13 @@ executable ss
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , amazonka
-    , amazonka-dynamodb
     , base
     , bytestring
     , http-media
-    , lucid
     , servant
     , servant-elm-study
     , servant-server
+    , text
     , time
     , wai
     , warp
@@ -82,18 +77,16 @@ test-suite servant-elm-study-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , amazonka
-    , amazonka-dynamodb
     , base
     , bytestring
     , hspec
     , hspec-wai
     , hspec-wai-json
     , http-media
-    , lucid
     , servant
     , servant-elm-study
     , servant-server
+    , text
     , time
     , wai
     , warp

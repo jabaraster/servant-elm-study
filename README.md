@@ -1,4 +1,4 @@
-# servant-sandbox
+# servant-elm-study
 
 # TODO
 * エンドポイントの追加 →成功

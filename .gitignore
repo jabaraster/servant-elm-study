@@ -3,3 +3,5 @@
 dist/
 elm-stuff/
 node_modules/
+bin/
+backend/static/
