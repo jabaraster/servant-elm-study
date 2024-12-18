@@ -10,8 +10,8 @@
 #
 # snapshot: lts-22.28
 # snapshot: nightly-2024-07-05
-# snapshot: ghc-9.6.6
-#
+# snapshot: ghc-9.4.4
+
 # The location of a snapshot can be provided as a file or url. Stack assumes
 # a snapshot provided as a file might change, whereas a url resource does not.
 #
@@ -67,5 +67,8 @@ packages:
 # compiler-check: newer-minor
 
 docker:
-  repo: udemir/utdemir/ghc-musl:v25-ghc944
+  repo: utdemir/ghc-musl:v25-ghc944
   enable: false
+
+install-ghc: true
+skip-ghc-check: false

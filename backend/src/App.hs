@@ -53,12 +53,12 @@ type API =
 server :: Server API
 server =
   indexHandler
-    :<|> serveDirectoryFileServer "./static"
+    :<|> serveDirectoryFileServer "./public"
     :<|> usersHandler
 
 indexHandler :: Handler FileContent
 indexHandler = do
-  cnt <- liftIO $ Lazy.readFile "./static/index.html"
+  cnt <- liftIO $ Lazy.readFile "./public/index.html"
   return $ FileContent cnt
 
 usersHandler :: Handler [User]
