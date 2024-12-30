@@ -1,5 +1,7 @@
 import { Elm } from "./Main.elm";
 
+console.log("Elm: ", Elm);
+
 interface User {
   id: number;
   firstName: string;

@@ -10,23 +10,14 @@ module App (
 ) where
 
 import Control.Monad.IO.Class
-import Data.Aeson
-import Data.Aeson.TH
 import Data.ByteString.Lazy as Lazy
-import Data.Time.Calendar
 import Network.HTTP.Media ((//), (/:))
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
 
-data User = User
-  { id :: Int
-  , firstName :: String
-  , lastName :: String
-  , registrationDate :: Day
-  }
-  deriving (Eq, Show)
-$(deriveJSON defaultOptions ''User)
+import Api
+import Model
 
 newtype FileContent = FileContent {unRaw :: Lazy.ByteString}
 
@@ -54,17 +45,9 @@ server :: Server API
 server =
   indexHandler
     :<|> serveDirectoryFileServer "./public"
-    :<|> usersHandler
+    :<|> liftIO usersHandler
 
 indexHandler :: Handler FileContent
 indexHandler = do
   cnt <- liftIO $ Lazy.readFile "./public/index.html"
   return $ FileContent cnt
-
-usersHandler :: Handler [User]
-usersHandler =
-  return
-    [ User 1 "Isaac" "Newton" (fromGregorian 1683 3 1)
-    , User 2 "Albert" "Einstein" (fromGregorian 1905 12 1)
-    , User 3 "Tomoyuki" "Kawano" (fromGregorian 1975 9 29)
-    ]

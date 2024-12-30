@@ -21,7 +21,9 @@ source-repository head
 
 library
   exposed-modules:
+      Api
       App
+      Model
   other-modules:
       Paths_servant_elm_study
   autogen-modules:
