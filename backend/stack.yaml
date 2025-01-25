@@ -66,9 +66,10 @@ packages:
 # Allow a newer minor version of GHC than the snapshot specifiesgg
 # compiler-check: newer-minor
 
-docker:
-  repo: utdemir/ghc-musl:v25-ghc944
-  enable: false
-
-install-ghc: true
-skip-ghc-check: false
+# docker:
+#   repo: utdemir/ghc-musl:v25-ghc944 # 正しいhaskellコンパイラを指定しよう
+#   enable: false
+# 
+# 
+# install-ghc: true
+# skip-ghc-check: false

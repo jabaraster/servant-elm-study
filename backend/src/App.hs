@@ -15,8 +15,10 @@ import Network.HTTP.Media ((//), (/:))
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
+import WaiAppStatic.Storage.Embedded (mkSettings)
 
 import Api
+import Emb (mkEmbedded)
 import Model
 
 newtype FileContent = FileContent {unRaw :: Lazy.ByteString}
@@ -28,7 +30,7 @@ instance MimeRender HTML FileContent where
   mimeRender _ = unRaw
 
 startApp :: IO ()
-startApp = run 8080 app
+startApp = run 8082 app
 
 app :: Application
 app = serve api server
@@ -39,12 +41,14 @@ api = Proxy
 type API =
   Get '[HTML] FileContent
     :<|> "public" :> Raw
+    :<|> "static" :> Raw
     :<|> "api" :> "users" :> Get '[JSON] [User]
 
 server :: Server API
 server =
   indexHandler
     :<|> serveDirectoryFileServer "./public"
+    :<|> serveDirectoryWith $(mkSettings mkEmbedded)
     :<|> liftIO usersHandler
 
 indexHandler :: Handler FileContent

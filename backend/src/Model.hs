@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Model (
-    User(..)
+  User (..),
 ) where
 
 import Data.Aeson

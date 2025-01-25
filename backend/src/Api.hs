@@ -1,5 +1,5 @@
 module Api (
-    usersHandler
+  usersHandler,
 ) where
 
 import Data.Time.Calendar

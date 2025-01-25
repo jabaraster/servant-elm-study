@@ -23,6 +23,7 @@ library
   exposed-modules:
       Api
       App
+      Emb
       Model
   other-modules:
       Paths_servant_elm_study
@@ -34,13 +35,19 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-md5
+    , directory
+    , filepath
     , http-media
+    , mime-types
     , servant
     , servant-server
     , text
     , time
     , wai
+    , wai-app-static
     , warp
   default-language: Haskell2010
 
@@ -56,14 +63,20 @@ executable ss
   build-depends:
       aeson
     , base
+    , base64-bytestring
     , bytestring
+    , cryptohash-md5
+    , directory
+    , filepath
     , http-media
+    , mime-types
     , servant
     , servant-elm-study
     , servant-server
     , text
     , time
     , wai
+    , wai-app-static
     , warp
   default-language: Haskell2010
 
@@ -80,16 +93,22 @@ test-suite servant-elm-study-test
   build-depends:
       aeson
     , base
+    , base64-bytestring
     , bytestring
+    , cryptohash-md5
+    , directory
+    , filepath
     , hspec
     , hspec-wai
     , hspec-wai-json
     , http-media
+    , mime-types
     , servant
     , servant-elm-study
     , servant-server
     , text
     , time
     , wai
+    , wai-app-static
     , warp
   default-language: Haskell2010
