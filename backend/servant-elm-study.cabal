@@ -23,7 +23,7 @@ library
   exposed-modules:
       Api
       App
-      Emb
+      Embedded
       Model
   other-modules:
       Paths_servant_elm_study
@@ -44,6 +44,7 @@ library
     , mime-types
     , servant
     , servant-server
+    , template-haskell
     , text
     , time
     , wai
@@ -73,6 +74,7 @@ executable ss
     , servant
     , servant-elm-study
     , servant-server
+    , template-haskell
     , text
     , time
     , wai
@@ -106,6 +108,7 @@ test-suite servant-elm-study-test
     , servant
     , servant-elm-study
     , servant-server
+    , template-haskell
     , text
     , time
     , wai
