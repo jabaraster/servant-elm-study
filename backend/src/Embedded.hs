@@ -4,7 +4,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Embedded (
-  index,
   staticFiles,
   genIndexHandler,
   makeHandlerFromHtml,
@@ -25,11 +24,13 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 import Control.Monad.IO.Class
-import Data.ByteString.Lazy as Lazy (ByteString)
+import Data.ByteString.Lazy as Lazy (ByteString, readFile)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Network.HTTP.Media ((//), (/:))
 import Servant
+
+import Config
 
 newtype FileContent = FileContent {unRaw :: ByteString}
 
@@ -49,24 +50,51 @@ genIndexHandler =
     }
 
 genIndexHandlerCore :: FilePath -> Q [Dec]
-genIndexHandlerCore path =
+genIndexHandlerCore pathWithSpace = do
   let name = mkName "indexHandler"
-   in do
-        html <- liftIO $ Prelude.readFile $ strip path
-        return
-          [ SigD name (AppT (ConT ''Handler) (ConT ''FileContent)) -- 関数宣言部
-          , FunD
-              name
-              [ Clause
-                  []
-                  ( NormalB $ AppE (VarE 'makeHandlerFromHtml) (LitE (StringL html))
-                  )
-                  [] -- 実装定義部
-              ]
-          ]
+  let path = strip pathWithSpace
+  config <- liftIO $ Config.loadConfigWithDefault
+  if Config.runtimeEnv config == Dev
+    then do
+      -- 開発中は毎回ファイルを読み込む
+      return
+        [ SigD name (AppT (ConT ''Handler) (ConT ''FileContent)) -- 関数宣言部
+        , FunD
+            name
+            [ Clause
+                []
+                ( NormalB $ AppE (VarE 'dynamicHandler) (LitE $ StringL path)
+                )
+                [] -- 実装定義部
+            ]
+        ]
+    else do
+      -- 開発以外ではコンパイル時にファイルを埋め込む
+      html <- liftIO $ Prelude.readFile path
+      return
+        [ SigD name (AppT (ConT ''Handler) (ConT ''FileContent)) -- 関数宣言部
+        , FunD
+            name
+            [ Clause
+                []
+                ( NormalB $ AppE (VarE 'makeHandlerFromHtml) (LitE $ StringL html)
+                )
+                [] -- 実装定義部
+            ]
+        ]
 
 makeHandlerFromHtml :: ByteString -> Handler FileContent
 makeHandlerFromHtml = return . FileContent
+
+dynamicHandler :: FilePath -> Handler FileContent
+dynamicHandler path = do
+  html <- liftIO $ Lazy.readFile $ strip path
+  return $ FileContent $ html
+
+-- indexHandler :: Handler FileContent
+-- indexHandler = do
+--   cnt <- liftIO $ Lazy.readFile "./public/index.html"
+--   return $ FileContent cnt
 
 staticFiles :: IO [EmbeddableEntry]
 staticFiles =

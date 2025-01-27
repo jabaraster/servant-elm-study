@@ -23,6 +23,7 @@ library
   exposed-modules:
       Api
       App
+      Config
       Embedded
       Model
   other-modules:

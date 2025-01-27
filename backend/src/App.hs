@@ -17,9 +17,9 @@ import Servant
 import WaiAppStatic.Storage.Embedded (mkSettings)
 
 import Api
+import Config
 import Embedded
 import Model
-
 
 {-
 index.htmlをバイナリに埋め込むための工夫
@@ -33,12 +33,13 @@ index.htmlだけ別途埋め込むことにした.
 
 startApp :: IO ()
 startApp = do
-  let port :: Int = 8082
-  putStrLn $ "Listening on port " ++ show port
-  run port app
+  config <- Config.loadConfigWithDefault
+  let portNum = Config.getPort $ Config.port config
+  putStrLn $ "Listening on port " ++ show portNum
+  run portNum $ app config
 
-app :: Application
-app = serve api server
+app :: Config -> Application
+app config = serve api $ server config
 
 api :: Proxy API
 api = Proxy
@@ -48,8 +49,11 @@ type API =
     :<|> "public" :> Raw
     :<|> "api" :> "users" :> Get '[JSON] [User]
 
-server :: Server API
-server =
+server :: Config -> Server API
+server config =
   indexHandler
-    :<|> serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
+    :<|> ( if Config.runtimeEnv config == Dev
+            then (serveDirectoryWebApp "public")
+            else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
+         )
     :<|> liftIO usersHandler
