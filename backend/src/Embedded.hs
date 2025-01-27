@@ -40,6 +40,14 @@ instance Accept HTML where
 instance MimeRender HTML FileContent where
   mimeRender _ = unRaw
 
+makeHandlerFromHtml :: ByteString -> Handler FileContent
+makeHandlerFromHtml = return . FileContent
+
+dynamicHandler :: FilePath -> Handler FileContent
+dynamicHandler path = do
+  html <- liftIO $ Lazy.readFile $ strip path
+  return $ FileContent $ html
+
 genIndexHandler :: QuasiQuoter
 genIndexHandler =
   QuasiQuoter
@@ -82,19 +90,6 @@ genIndexHandlerCore pathWithSpace = do
                 [] -- 実装定義部
             ]
         ]
-
-makeHandlerFromHtml :: ByteString -> Handler FileContent
-makeHandlerFromHtml = return . FileContent
-
-dynamicHandler :: FilePath -> Handler FileContent
-dynamicHandler path = do
-  html <- liftIO $ Lazy.readFile $ strip path
-  return $ FileContent $ html
-
--- indexHandler :: Handler FileContent
--- indexHandler = do
---   cnt <- liftIO $ Lazy.readFile "./public/index.html"
---   return $ FileContent cnt
 
 staticFiles :: IO [EmbeddableEntry]
 staticFiles =
