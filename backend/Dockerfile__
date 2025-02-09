@@ -1,16 +1,36 @@
-# Build from a base image which includes the appropriate GHC, as well as a
-# number of system libraries. You can build your own base image as desired,
-# just make sure that the correct GHC ends up on the PATH.
-FROM fpco/stack-build
+FROM alpine:3.12 as GHC
 
-# Download the stack-docker-image-build executable and make it executable
-RUN curl -L https://github.com/fpco/stack-docker-image-build/releases/download/v0.1.0.0/stack-docker-image-build > /usr/local/bin/stack-docker-image-build && chmod +x /usr/local/bin/stack-docker-image-build
+# INSTALL GHC
 
-# Copy over our source directory, which must include the stack.yaml file and
-# all local packages
-ADD ./ /src
+# Dependence on the GHC build
+RUN apk add --update --no-cache \
+    musl-dev \
+    python3 \
+    gcc \
+    clang \
+    make
+RUN mkdir /root/workspace
+RUN wget -O - 'https://downloads.haskell.org/~ghc/8.10.1/ghc-8.10.1-x86_64-alpine3.10-linux-integer-simple.tar.xz' | tar -Jxvf - -C /root/workspace
+WORKDIR /root/workspace/ghc-8.10.1-x86_64-unknown-linux
+RUN ./configure --prefix=/ghc
+RUN make install
 
-# Kick off the build. This must be run from the directory containing the
-# stack.yaml file (thus the cd /src). The executable will take care of
-# everything else.
-RUN cd /src && /usr/local/bin/stack-docker-image-build
+FROM alpine:3.12
+
+COPY --from=GHC /ghc /ghc
+ENV PATH /ghc/bin:$PATH
+
+# INSTALL STACK
+RUN wget -qO- https://get.haskellstack.org/ | sh
+
+# Dependence on the Stack and GHC to run
+RUN apk add --update --no-cache \
+    musl-dev \
+    gcc \
+    ncurses-libs \
+    gmp-dev \
+    shadow \
+    binutils-gold
+
+# Change linker to gold.
+RUN unlink /usr/bin/ld && ln -s /usr/bin/ld.gold /usr/bin/ld
