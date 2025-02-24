@@ -8,3 +8,8 @@ backend/static/backend/public/index.92d41d6d.js backend/public/index.92d41d6d.js
 dist-newstyle
 backend/stack/
 backend/public/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

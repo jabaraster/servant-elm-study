@@ -38,7 +38,7 @@ data Config = Config
   deriving (Show, Eq, Read)
 
 defaultPort :: Port
-defaultPort = Port 8082
+defaultPort = Port 8080
 
 defaultRuntimeEnv :: RuntimeEnv
 defaultRuntimeEnv = Dev

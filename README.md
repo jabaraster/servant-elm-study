@@ -18,3 +18,11 @@
 ```shinsakata/ghc-single-binary-builder```を使ってビルドを試みる。
 
 stack.yamlのresolverを変えて２通り試してみたが、どちらも手詰まり。
+
+# AWS Beandtalkにデプロイするのに試したこと
+
+```
+eb init -p docker --profile jabara-admin servant-elm-study
+# eb init --profile jabara-admin
+eb create --profile jabara-admin servant-elm-study
+```
