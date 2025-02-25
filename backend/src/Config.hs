@@ -60,7 +60,9 @@ loadConfigWithDefault :: IO Config
 loadConfigWithDefault = do
   eConfig <- Config.loadConfig
   case eConfig of
-    Right config -> return config
+    Right config ->  do
+      putStrLn $ "Loaded config: " ++ show config
+      return config
     Left errs -> do
       mapM_ putStrLn errs
       putStrLn "デフォルト設定を採用します..."
