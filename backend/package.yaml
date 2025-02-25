@@ -20,7 +20,7 @@ copyright:           "2024 jabaraster"
 description:         Please see the README on GitHub at <https://github.com/jabaraster/servant-elm-study#readmy>
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.12 && < 5
 - aeson
 - base64-bytestring
 - bytestring
@@ -37,6 +37,7 @@ dependencies:
 - wai
 - wai-app-static
 - warp
+- amazonka-dynamodb
 
 ghc-options:
 - -Wall
@@ -48,6 +49,7 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -XDuplicateRecordFields
 
 library:
   source-dirs: src

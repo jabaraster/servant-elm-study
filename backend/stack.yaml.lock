@@ -3,11 +3,24 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: amazonka-dynamodb-2.0@sha256:f0509df0da2b61ce1b256f285bdf6ade452b0b4d9b129d7192dd8a13f90e5036,11852
+    pantry-tree:
+      sha256: 166e8ac4bc8583fdac909428877826e845560d4cc64d57cee49b5fef6627d59a
+      size: 25625
+  original:
+    hackage: amazonka-dynamodb-2.0@sha256:f0509df0da2b61ce1b256f285bdf6ade452b0b4d9b129d7192dd8a13f90e5036,11852
+- completed:
+    hackage: amazonka-core-2.0@sha256:b60507a2791d05ce6fb69544a854c0ee0ec794908400aebe9adcacedf9cd4e17,4585
+    pantry-tree:
+      sha256: 60d4c21ff717e3cfa3fc78812c6d1032e22c27d9427d2ab42f649a6cc0b70d0d
+      size: 3222
+  original:
+    hackage: amazonka-core-2.0@sha256:b60507a2791d05ce6fb69544a854c0ee0ec794908400aebe9adcacedf9cd4e17,4585
 snapshots:
 - completed:
-    sha256: ecb944087cba3b8e85ff75d279bbb878615127e44d1b0485c511834c56ee6929
-    size: 680789
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/8.yaml
-  original:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/8.yaml
+    sha256: 9444fadfa30b67a93080254d53872478c087592ad64443e47c546cdcd13149ae
+    size: 678857
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/0.yaml
+  original: lts-23.0
