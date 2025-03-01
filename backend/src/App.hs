@@ -48,12 +48,14 @@ type API =
   Get '[HTML] FileContent
     :<|> "public" :> Raw
     :<|> "api" :> "users" :> Get '[JSON] [User]
+    :<|> "api" :> "authorities" :> Get '[JSON] [Authority]
 
 server :: Config -> Server API
 server config =
   indexHandler
     :<|> ( if Config.runtimeEnv config == Dev
-            then (serveDirectoryWebApp "public")
+            then serveDirectoryWebApp "public"
             else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
          )
     :<|> liftIO usersHandler
+    :<|> liftIO authoritiesHandler

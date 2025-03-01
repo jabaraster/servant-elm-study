@@ -37,7 +37,12 @@ dependencies:
 - wai
 - wai-app-static
 - warp
+- amazonka
+- amazonka-core
 - amazonka-dynamodb
+- lens
+- safe-exceptions
+- unordered-containers
 
 ghc-options:
 - -Wall
@@ -49,7 +54,6 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
-- -XDuplicateRecordFields
 
 library:
   source-dirs: src
