@@ -10,6 +10,7 @@ module App (
   app,
 ) where
 
+import Control.Lens
 import Control.Monad.IO.Class
 import Network.Wai
 import Network.Wai.Handler.Warp
@@ -34,12 +35,13 @@ index.htmlだけ別途埋め込むことにした.
 startApp :: IO ()
 startApp = do
   config <- Config.loadConfigWithDefault
-  let portNum = Config.getPort $ Config.port config
+  db <- Api.getDb config
+  let portNum = Config.getPort $ config ^. port
   putStrLn $ "Listening on port " ++ show portNum
-  run portNum $ app config
+  run portNum $ app config db
 
-app :: Config -> Application
-app config = serve api $ server config
+app :: Config -> Db -> Application
+app config db = serve api $ server config db
 
 api :: Proxy API
 api = Proxy
@@ -50,12 +52,12 @@ type API =
     :<|> "api" :> "users" :> Get '[JSON] [User]
     :<|> "api" :> "authorities" :> Get '[JSON] [Authority]
 
-server :: Config -> Server API
-server config =
+server :: Config -> Db -> Server API
+server config db =
   indexHandler
-    :<|> ( if Config.runtimeEnv config == Dev
+    :<|> ( if config ^. runtimeEnv == Dev
             then serveDirectoryWebApp "public"
             else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
          )
-    :<|> liftIO usersHandler
-    :<|> liftIO authoritiesHandler
+    :<|> liftIO (usersHandler db)
+    :<|> liftIO (authoritiesHandler db)

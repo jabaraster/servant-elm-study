@@ -11,6 +11,7 @@ module Embedded (
   FileContent (..),
 ) where
 
+import Control.Lens
 import Crypto.Hash.MD5 (hashlazy)
 import Network.Mime (defaultMimeLookup)
 
@@ -62,7 +63,7 @@ genIndexHandlerCore pathWithSpace = do
   let name = mkName "indexHandler"
   let path = strip pathWithSpace
   config <- liftIO $ Config.loadConfigWithDefault
-  if Config.runtimeEnv config == Dev
+  if (config ^. runtimeEnv) == Dev
     then do
       -- 開発中は毎回ファイルを読み込む
       return

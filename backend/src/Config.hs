@@ -1,3 +1,7 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Config (
   Config (..),
   Port,
@@ -8,8 +12,12 @@ module Config (
   default_,
   defaultPort,
   defaultRuntimeEnv,
+  -- Lens
+  runtimeEnv,
+  port,
 ) where
 
+import Control.Lens.TH
 import System.Environment
 import Text.Read (readMaybe)
 
@@ -18,6 +26,13 @@ data Port = Port Int
 
 data RuntimeEnv = Dev | Prod
   deriving (Show, Eq, Read)
+
+data Config = Config
+  { _configPort :: Port
+  , _configRuntimeEnv :: RuntimeEnv
+  }
+  deriving (Show, Eq, Read)
+makeFields ''Config
 
 tryPort :: Int -> Maybe Port
 tryPort num =
@@ -30,12 +45,6 @@ tryPort num =
 
 getPort :: Port -> Int
 getPort (Port num) = num
-
-data Config = Config
-  { port :: Port
-  , runtimeEnv :: RuntimeEnv
-  }
-  deriving (Show, Eq, Read)
 
 defaultPort :: Port
 defaultPort = Port 8080

@@ -1,7 +1,11 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Api (
+  Db,
+  getDb,
   usersHandler,
   authoritiesHandler,
 ) where
@@ -10,6 +14,7 @@ import Amazonka as AWS
 import Amazonka.DynamoDB.Scan
 import Amazonka.DynamoDB.Types.AttributeValue
 import Amazonka.Prelude (HashMap)
+import Config
 import Control.Exception.Safe (throwString)
 import Control.Lens
 import Control.Lens.TH
@@ -23,12 +28,23 @@ import System.IO (stdout)
 import Model
 
 data TableNames = TableNames
-  { _authority :: Text
-  , _user :: Text
+  { _tableNamesAuthority :: Text
+  , _tableNamesUser :: Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Read)
+makeFields ''TableNames
 
-makeLenses ''TableNames
+data Db = Db Env TableNames
+
+getDb :: Config -> IO Db
+getDb config = do
+  logger <- AWS.newLogger (if config ^. runtimeEnv == Dev then AWS.Debug else AWS.Info) stdout
+  discoveredEnv <- AWS.newEnv AWS.discover
+  tableNames <- loadTableNames
+
+  let env = discoveredEnv {AWS.logger = logger, AWS.region = AWS.Tokyo}
+
+  return $ Db env tableNames
 
 loadTableNames :: IO TableNames
 loadTableNames = do
@@ -41,13 +57,8 @@ loadTableNames = do
     _ ->
       throwString "table name not found."
 
-authoritiesHandler :: IO [Authority]
-authoritiesHandler = do
-  logger <- AWS.newLogger AWS.Debug stdout
-  discoveredEnv <- AWS.newEnv AWS.discover
-  tableNames <- loadTableNames
-
-  let env = discoveredEnv {AWS.logger = logger, AWS.region = AWS.Tokyo}
+authoritiesHandler :: Db -> IO [Authority]
+authoritiesHandler (Db env tableNames) = do
   res <- AWS.runResourceT $ AWS.send env $ newScan (tableNames ^. authority)
   case res ^. scanResponse_items of
     Nothing -> return []
@@ -73,8 +84,8 @@ getInt values propertyName =
     Just (N s) -> return $ read $ Text.unpack s
     _ -> throwString ("property '" ++ (Text.unpack propertyName) ++ "' notfound.")
 
-usersHandler :: IO [User]
-usersHandler =
+usersHandler :: Db -> IO [User]
+usersHandler _ =
   return
     [ User 1 "Isaac, " "Newton" (fromGregorian 1683 3 1)
     , User 2 "Albert, " "Einstein" (fromGregorian 1905 12 1)
