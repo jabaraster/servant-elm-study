@@ -38,6 +38,7 @@ library
     , amazonka
     , amazonka-core
     , amazonka-dynamodb
+    , amazonka-dynamodb-helper
     , base >=4.12 && <5
     , base64-bytestring
     , bytestring
@@ -53,7 +54,6 @@ library
     , template-haskell
     , text
     , time
-    , unordered-containers
     , wai
     , wai-app-static
     , warp
@@ -73,6 +73,7 @@ executable ss
     , amazonka
     , amazonka-core
     , amazonka-dynamodb
+    , amazonka-dynamodb-helper
     , base >=4.12 && <5
     , base64-bytestring
     , bytestring
@@ -89,7 +90,6 @@ executable ss
     , template-haskell
     , text
     , time
-    , unordered-containers
     , wai
     , wai-app-static
     , warp
@@ -110,6 +110,7 @@ test-suite servant-elm-study-test
     , amazonka
     , amazonka-core
     , amazonka-dynamodb
+    , amazonka-dynamodb-helper
     , base
     , base64-bytestring
     , bytestring
@@ -129,7 +130,6 @@ test-suite servant-elm-study-test
     , template-haskell
     , text
     , time
-    , unordered-containers
     , wai
     , wai-app-static
     , warp

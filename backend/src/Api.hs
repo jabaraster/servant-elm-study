@@ -13,15 +13,15 @@ module Api (
 import Amazonka as AWS
 import Amazonka.DynamoDB.Scan
 import Amazonka.DynamoDB.Types.AttributeValue
+import qualified Jabara.Amazonka.DynamoDB.Helper as DH
 import Amazonka.Prelude (HashMap)
 import Config
-import Control.Exception.Safe (throwString)
 import Control.Lens
 import Control.Lens.TH
-import qualified Data.HashMap.Strict as HashMap
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Time.Calendar
+import Control.Exception.Safe (throwString)
 import System.Environment
 import System.IO (stdout)
 
@@ -66,23 +66,11 @@ authoritiesHandler (Db env tableNames) = do
  where
   recToAuthority :: HashMap Text AttributeValue -> IO Authority
   recToAuthority rec = do
-    ca <- getString rec "createdAt"
-    ua <- getString rec "updatedAt"
-    lv <- getInt rec "level"
-    nm <- getString rec "name"
-    return $ Authority (Text.unpack ca) (Text.unpack ua) lv (Text.unpack nm)
-
-getString :: HashMap Text AttributeValue -> Text -> IO Text
-getString values propertyName =
-  case HashMap.lookup propertyName values of
-    Just (S s) -> return s
-    _ -> throwString ("property '" ++ (Text.unpack propertyName) ++ "' notfound.")
-
-getInt :: HashMap Text AttributeValue -> Text -> IO Int
-getInt values propertyName =
-  case HashMap.lookup propertyName values of
-    Just (N s) -> return $ read $ Text.unpack s
-    _ -> throwString ("property '" ++ (Text.unpack propertyName) ++ "' notfound.")
+    ca <- DH.getTextUnsafe rec "createdAt"
+    ua <- DH.getTextUnsafe rec "updatedAt"
+    lv <- DH.getIntegerUnsafe rec "level"
+    nm <- DH.getTextUnsafe rec "name"
+    return $ Authority ca ua lv nm
 
 usersHandler :: Db -> IO [User]
 usersHandler _ =
