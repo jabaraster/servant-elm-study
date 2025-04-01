@@ -12,6 +12,7 @@ module App (
 
 import Control.Lens
 import Control.Monad.IO.Class
+import Data.Text (Text)
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
@@ -50,7 +51,9 @@ type API =
   Get '[HTML] FileContent
     :<|> "public" :> Raw
     :<|> "api" :> "users" :> Get '[JSON] [User]
+    :<|> "api" :> "users" :> Capture "userId" Integer :> Get '[JSON] (Maybe User)
     :<|> "api" :> "authorities" :> Get '[JSON] [Authority]
+    :<|> "api" :> "authorities" :> Capture "authorityName" Text :> Get '[JSON] (Maybe Authority)
 
 server :: Config -> Db -> Server API
 server config db =
@@ -60,4 +63,9 @@ server config db =
             else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
          )
     :<|> liftIO (usersHandler db)
+    :<|> liftIO1 (userHandler db)
     :<|> liftIO (authoritiesHandler db)
+    :<|> liftIO1 (authortyByNameHandler db)
+
+liftIO1 :: (MonadIO m) => (a -> IO b) -> a -> m b
+liftIO1 f x = liftIO (f x)
