@@ -12,7 +12,6 @@ module App (
 
 import Control.Lens
 import Control.Monad.IO.Class
-import Data.Text (Text)
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
@@ -21,7 +20,7 @@ import WaiAppStatic.Storage.Embedded (mkSettings)
 import Api
 import Config
 import Embedded
-import Model
+import Entity
 
 {-
 index.htmlをバイナリに埋め込むための工夫
@@ -50,10 +49,10 @@ api = Proxy
 type API =
   Get '[HTML] FileContent
     :<|> "public" :> Raw
-    :<|> "api" :> "users" :> Get '[JSON] [User]
-    :<|> "api" :> "users" :> Capture "userId" Integer :> Get '[JSON] (Maybe User)
-    :<|> "api" :> "authorities" :> Get '[JSON] [Authority]
-    :<|> "api" :> "authorities" :> Capture "authorityName" Text :> Get '[JSON] (Maybe Authority)
+    :<|> "api" :> "users" :> Get '[JSON] [UserRecord]
+    :<|> "api" :> "users" :> Capture "userId" Integer :> Get '[JSON] (Maybe UserRecord)
+    :<|> "api" :> "authorities" :> Get '[JSON] [AuthorityRecord]
+    :<|> "api" :> "authorities" :> Capture "authorityName" Integer :> Get '[JSON] (Maybe AuthorityRecord)
 
 server :: Config -> Db -> Server API
 server config db =
@@ -63,9 +62,9 @@ server config db =
             else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
          )
     :<|> liftIO (usersHandler db)
-    :<|> liftIO1 (userHandler db)
+    :<|> liftIO1 (\idValue -> userHandler db (Id idValue))
     :<|> liftIO (authoritiesHandler db)
-    :<|> liftIO1 (authortyByNameHandler db)
+    :<|> liftIO1 (\idValue -> authortyHandler db (Id idValue))
 
 liftIO1 :: (MonadIO m) => (a -> IO b) -> a -> m b
 liftIO1 f x = liftIO (f x)

@@ -25,7 +25,11 @@ library
       App
       Config
       Embedded
-      Model
+      Entity
+      Entity.Authority
+      Entity.Base
+      Entity.Helper
+      Entity.User
   other-modules:
       Paths_servant_elm_study
   autogen-modules:

@@ -11,27 +11,25 @@ module Api (
   usersHandler,
   userHandler,
   authoritiesHandler,
-  authortyByNameHandler,
+  authortyHandler,
 ) where
 
 import Amazonka as AWS
 import Amazonka.DynamoDB.GetItem
-import Amazonka.DynamoDB.Query
 import Amazonka.DynamoDB.Scan
 import Amazonka.DynamoDB.Types.AttributeValue
 import Amazonka.Prelude (fromList)
 import Config
 import Control.Exception.Safe (throwString)
 import Control.Lens
-import Control.Lens.TH
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Time.Clock
+import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)
 import qualified Jabara.Amazonka.DynamoDB.Helper as DH
 import System.Environment
 import System.IO (stdout)
 
-import Model
+import Entity
 
 data TableNames = TableNames
   { _tableNamesAuthority :: Text
@@ -66,44 +64,33 @@ loadTableNames = do
     _ ->
       throwString "table name not found."
 
-authoritiesHandler :: Db -> IO [Authority]
-authoritiesHandler db = do
-  res <- AWS.runResourceT $ AWS.send (db ^. env) $ newScan (db ^. tableNames ^. authority)
-  case res ^. scanResponse_items of
-    Nothing -> return []
-    Just rs -> mapM DH.fromAttributeValueUnsafe rs
-
-usersHandler :: Db -> IO [User]
-usersHandler db = do
-  res <- AWS.runResourceT $ AWS.send (db ^. env) $ newScan (db ^. tableNames ^. user)
-  case res ^. scanResponse_items of
-    Nothing -> return []
-    Just rs -> mapM DH.fromAttributeValueUnsafe rs
-
-userHandler :: Db -> Integer -> IO (Maybe User)
-userHandler db idValue = do
+getById :: (FromAttributeValue a) => Env -> Text -> Id b -> IO (Maybe a)
+getById env tableName id_ = do
   let req =
-        newGetItem (db ^. tableNames ^. user)
-          & getItem_key .~ fromList [("id", N $ Text.pack $ show idValue)]
-  res <- AWS.runResourceT $ AWS.send (db ^. env) req
+        newGetItem tableName
+          & getItem_key .~ fromList [("id", N $ Text.pack $ show $ id_ ^. value)]
+  res <- AWS.runResourceT $ AWS.send env req
   case res ^. getItemResponse_item of
     Nothing -> return Nothing
     Just rec -> do
-      user <- DH.fromAttributeValueUnsafe rec
-      return $ Just user
+      ret <- DH.fromAttributeValueUnsafe rec
+      return $ Just ret
 
-authortyByNameHandler :: Db -> Text -> IO (Maybe Authority)
-authortyByNameHandler db name = do
-  let req =
-        newQuery (db ^. tableNames ^. authority)
-          & query_keyConditionExpression .~ Just "#n = :name"
-          & query_expressionAttributeNames .~ (Just $ fromList [("#n", "name")])
-          & query_expressionAttributeValues .~ (Just $ fromList [(":name", S name)])
-          & query_limit .~ Just 1
-  res <- AWS.runResourceT $ AWS.send (db ^. env) req
-  case res ^. queryResponse_items of
-    [] -> return Nothing
-    [rec] -> do
-      auth <- DH.fromAttributeValueUnsafe rec
-      return $ Just auth
-    _ -> throwString "multiple authority found."
+list :: (FromAttributeValue a) => Env -> Text -> IO [a]
+list env tableName = do
+  res <- AWS.runResourceT $ AWS.send env $ newScan tableName
+  case res ^. scanResponse_items of
+    Nothing -> return []
+    Just rs -> mapM DH.fromAttributeValueUnsafe rs
+
+usersHandler :: Db -> IO [UserRecord]
+usersHandler (Db env tableNames) = list env (tableNames ^. user)
+
+userHandler :: Db -> Id User -> IO (Maybe UserRecord)
+userHandler (Db env tableNames) = getById env (tableNames ^. user)
+
+authoritiesHandler :: Db -> IO [AuthorityRecord]
+authoritiesHandler (Db env tableNames) = list env (tableNames ^. authority)
+
+authortyHandler :: Db -> Id Authority -> IO (Maybe AuthorityRecord)
+authortyHandler (Db env tableNames) = getById env (tableNames ^. authority)
