@@ -9,7 +9,6 @@
 module Entity.User where
 
 import Control.Lens
-import Control.Lens.TH
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Text (Text)
@@ -22,7 +21,9 @@ import Entity.Base
 import Entity.Helper
 
 data User = User
-  { _userFirstName :: Text
+  { _userCreatedAt :: UTCTime
+  , _userUpdatedAt :: UTCTime
+  , _userFirstName :: Text
   , _userLastName :: Text
   , _userRegistrationDate :: UTCTime
   }
@@ -30,12 +31,14 @@ data User = User
 makeFields ''User
 $(deriveJSON defaultOptions {fieldLabelModifier = fieldModifier 5} ''User)
 
-type UserRecord = Record User
+type UserEntity = Entity User
 
-instance FromAttributeValue UserRecord where
+instance FromAttributeValue UserEntity where
   fromAttributeValue rec = do
-    i <- DH.getInteger rec "id"
+    i <- DH.getText rec "id"
+    ca <- DH.getUTCTime rec "createdAt"
+    ua <- DH.getUTCTime rec "updatedAt"
     fn <- DH.getText rec "firstName"
     ln <- DH.getText rec "lastName"
     rd <- DH.getUTCTime rec "registrationDate"
-    return $ Record (Id i) (User fn ln rd)
+    return $ Entity (Id i) (User ca ua fn ln rd)

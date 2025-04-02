@@ -7,10 +7,11 @@
 
 module Entity (
   module Entity.Base,
-  module Entity.User,
-  module Entity.Authority,
+  -- module Entity.User,
+  -- module Entity.Authority,
 ) where
 
-import Entity.Authority
+-- import Entity.Authority
 import Entity.Base
-import Entity.User
+
+-- import Entity.User

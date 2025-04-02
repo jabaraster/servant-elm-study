@@ -12,6 +12,7 @@ module App (
 
 import Control.Lens
 import Control.Monad.IO.Class
+import Data.Text (Text)
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
@@ -21,6 +22,8 @@ import Api
 import Config
 import Embedded
 import Entity
+import Entity.Authority
+import Entity.User
 
 {-
 index.htmlをバイナリに埋め込むための工夫
@@ -49,10 +52,10 @@ api = Proxy
 type API =
   Get '[HTML] FileContent
     :<|> "public" :> Raw
-    :<|> "api" :> "users" :> Get '[JSON] [UserRecord]
-    :<|> "api" :> "users" :> Capture "userId" Integer :> Get '[JSON] (Maybe UserRecord)
-    :<|> "api" :> "authorities" :> Get '[JSON] [AuthorityRecord]
-    :<|> "api" :> "authorities" :> Capture "authorityName" Integer :> Get '[JSON] (Maybe AuthorityRecord)
+    :<|> "api" :> "users" :> Get '[JSON] [UserEntity]
+    :<|> "api" :> "users" :> Capture "userId" Text :> Get '[JSON] (Maybe UserEntity)
+    :<|> "api" :> "authorities" :> Get '[JSON] [AuthorityEntity]
+    :<|> "api" :> "authorities" :> Capture "authorityId" Text :> Get '[JSON] (Maybe AuthorityEntity)
 
 server :: Config -> Db -> Server API
 server config db =

@@ -26,21 +26,33 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)
 import qualified Jabara.Amazonka.DynamoDB.Helper as DH
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax (Name (..), nameBase)
 import System.Environment
 import System.IO (stdout)
 
+import Config
 import Entity
+import Entity.Authority
+import Entity.User
 
-data TableNames = TableNames
-  { _tableNamesAuthority :: Text
-  , _tableNamesUser :: Text
+data EntityTypes = EntityTypes
+  { _entityTypesUser :: Text
+  , _entityTypesAuthority :: Text
   }
-  deriving (Show, Eq, Read)
-makeFields ''TableNames
+  deriving (Show, Eq)
+makeFields ''EntityTypes
+
+entityTypes :: EntityTypes
+entityTypes =
+  EntityTypes
+    { _entityTypesUser = "User"
+    , _entityTypesAuthority = "Authority"
+    }
 
 data Db = Db
   { _dbEnv :: Env
-  , _dbTableNames :: TableNames
+  , _dbAppTable :: Text
   }
 makeFields ''Db
 
@@ -48,49 +60,54 @@ getDb :: Config -> IO Db
 getDb config = do
   logger <- AWS.newLogger (if config ^. runtimeEnv == Dev then AWS.Debug else AWS.Info) stdout
   discoveredEnv <- AWS.newEnv AWS.discover
-  tableNames <- loadTableNames
 
   let env = discoveredEnv {AWS.logger = logger, AWS.region = AWS.Tokyo}
-  return $ Db env tableNames
+  return $ Db env ("servant-elm-study-" <> Text.pack (show $ config ^. runtimeEnv))
 
-loadTableNames :: IO TableNames
-loadTableNames = do
-  envs <- getEnvironment
-  let mAuth = Prelude.lookup "TABLE_NAME_AUTHORITY" envs
-  let mUser = Prelude.lookup "TABLE_NAME_USER" envs
-  case (mAuth, mUser) of
-    (Just auth, Just user) ->
-      return $ TableNames (Text.pack auth) (Text.pack user)
-    _ ->
-      throwString "table name not found."
-
-getById :: (FromAttributeValue a) => Env -> Text -> Id b -> IO (Maybe a)
-getById env tableName id_ = do
+getById ::
+  (FromAttributeValue a) =>
+  Text ->
+  Db ->
+  Id b ->
+  IO (Maybe a)
+getById entityType db id_ = do
   let req =
-        newGetItem tableName
-          & getItem_key .~ fromList [("id", N $ Text.pack $ show $ id_ ^. value)]
-  res <- AWS.runResourceT $ AWS.send env req
+        (newGetItem (db ^. appTable))
+          & getItem_key
+            .~ fromList
+              [ ("entityType", S entityType)
+              , ("id", S $ id_ ^. value)
+              ]
+  res <- AWS.runResourceT $ AWS.send (db ^. env) req
   case res ^. getItemResponse_item of
     Nothing -> return Nothing
     Just rec -> do
       ret <- DH.fromAttributeValueUnsafe rec
       return $ Just ret
 
-list :: (FromAttributeValue a) => Env -> Text -> IO [a]
-list env tableName = do
-  res <- AWS.runResourceT $ AWS.send env $ newScan tableName
+list ::
+  (FromAttributeValue a) =>
+  Text ->
+  Db ->
+  IO [a]
+list entityType db = do
+  let req =
+        newScan (db ^. appTable)
+          & scan_filterExpression .~ Just "entityType = :entityType"
+          & scan_expressionAttributeValues .~ Just (fromList [(":entityType", S entityType)])
+  res <- AWS.runResourceT $ AWS.send (db ^. env) req
   case res ^. scanResponse_items of
     Nothing -> return []
     Just rs -> mapM DH.fromAttributeValueUnsafe rs
 
-usersHandler :: Db -> IO [UserRecord]
-usersHandler (Db env tableNames) = list env (tableNames ^. user)
+usersHandler :: Db -> IO [UserEntity]
+usersHandler = list $ entityTypes ^. user
 
-userHandler :: Db -> Id User -> IO (Maybe UserRecord)
-userHandler (Db env tableNames) = getById env (tableNames ^. user)
+userHandler :: Db -> Id User -> IO (Maybe UserEntity)
+userHandler = getById $ entityTypes ^. user
 
-authoritiesHandler :: Db -> IO [AuthorityRecord]
-authoritiesHandler (Db env tableNames) = list env (tableNames ^. authority)
+authoritiesHandler :: Db -> IO [AuthorityEntity]
+authoritiesHandler = list $ entityTypes ^. authority
 
-authortyHandler :: Db -> Id Authority -> IO (Maybe AuthorityRecord)
-authortyHandler (Db env tableNames) = getById env (tableNames ^. authority)
+authortyHandler :: Db -> Id Authority -> IO (Maybe AuthorityEntity)
+authortyHandler = getById $ entityTypes ^. authority

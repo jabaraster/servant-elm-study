@@ -24,19 +24,19 @@ data Authority = Authority
   { _authorityCreatedAt :: UTCTime
   , _authorityUpdatedAt :: UTCTime
   , _authorityLevel :: Integer
-  , _authorityName :: Text
+  , _authorityLabel :: Text
   }
   deriving (Generic, Show, Eq)
 makeFields ''Authority
 $(deriveJSON defaultOptions {fieldLabelModifier = fieldModifier 10} ''Authority)
 
-type AuthorityRecord = Record Authority
+type AuthorityEntity = Entity Authority
 
-instance FromAttributeValue AuthorityRecord where
+instance FromAttributeValue AuthorityEntity where
   fromAttributeValue rec = do
-    i <- DH.getInteger rec "id"
+    i <- DH.getText rec "id"
     ca <- DH.getUTCTime rec "createdAt"
     ua <- DH.getUTCTime rec "updatedAt"
     lv <- DH.getInteger rec "level"
-    nm <- DH.getText rec "name"
-    return $ Record (Id i) (Authority ca ua lv nm)
+    lb <- DH.getText rec "label"
+    return $ Entity (Id i) (Authority ca ua lv lb)
