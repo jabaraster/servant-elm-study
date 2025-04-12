@@ -16,7 +16,7 @@ module Api (
 
 import Amazonka as AWS
 import Amazonka.DynamoDB.GetItem
-import Amazonka.DynamoDB.Scan
+import Amazonka.DynamoDB.Query
 import Amazonka.DynamoDB.Types.AttributeValue
 import Amazonka.Prelude (fromList)
 import Config
@@ -72,7 +72,7 @@ getById ::
   IO (Maybe a)
 getById entityType db id_ = do
   let req =
-        (newGetItem (db ^. appTable))
+        (newGetItem $ db ^. appTable)
           & getItem_key
             .~ fromList
               [ ("entityType", S entityType)
@@ -92,13 +92,11 @@ list ::
   IO [a]
 list entityType db = do
   let req =
-        newScan (db ^. appTable)
-          & scan_filterExpression .~ Just "entityType = :entityType"
-          & scan_expressionAttributeValues .~ Just (fromList [(":entityType", S entityType)])
+        (newQuery $ db ^. appTable)
+          & query_keyConditionExpression .~ Just "entityType = :entityType"
+          & query_expressionAttributeValues .~ Just (fromList [(":entityType", S entityType)])
   res <- AWS.runResourceT $ AWS.send (db ^. env) req
-  case res ^. scanResponse_items of
-    Nothing -> return []
-    Just rs -> mapM DH.fromAttributeValueUnsafe rs
+  mapM DH.fromAttributeValueUnsafe $ res ^. queryResponse_items
 
 usersHandler :: Db -> IO [UserEntity]
 usersHandler = list $ entityTypes ^. user
