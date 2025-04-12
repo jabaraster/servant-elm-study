@@ -1,11 +1,22 @@
 module Entity.Derive exposing
     ( decodeAndMap
     , decodeEntityMeta
+    , encodeEntityMeta
     )
 
 import Entity exposing (EntityMeta)
 import Iso8601
 import Json.Decode
+import Json.Encode
+
+
+encodeEntityMeta : EntityMeta -> Json.Encode.Value
+encodeEntityMeta =
+    \value0 ->
+        Json.Encode.object
+            [ ( "createdAt", Json.Encode.string <| Iso8601.fromTime <| value0.createdAt )
+            , ( "updatedAt", Json.Encode.string <| Iso8601.fromTime <| value0.updatedAt )
+            ]
 
 
 decodeEntityMeta : Json.Decode.Decoder EntityMeta

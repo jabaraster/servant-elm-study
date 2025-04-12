@@ -1,6 +1,6 @@
 module Entity.User.Derive exposing (..)
 
-import Entity.Derive exposing (decodeAndMap, decodeEntityMeta)
+import Entity.Derive exposing (decodeAndMap, decodeEntityMeta, encodeEntityMeta)
 import Entity.User exposing (..)
 import Json.Decode
 import Json.Encode
@@ -24,7 +24,12 @@ encodeUser =
 
 encodeUserEntity : UserEntity -> Json.Encode.Value
 encodeUserEntity =
-    \value0 -> Json.Encode.object [ ( "id", encodeUserId value0.id ), ( "payload", encodeUser value0.payload ) ]
+    \value0 ->
+        Json.Encode.object
+            [ ( "id", encodeUserId value0.id )
+            , ( "meta", encodeEntityMeta value0.meta )
+            , ( "payload", encodeUser value0.payload )
+            ]
 
 
 decodeUserId : Json.Decode.Decoder UserId
@@ -43,7 +48,7 @@ decodeUser =
 
 decodeUserEntity : Json.Decode.Decoder UserEntity
 decodeUserEntity =
-    Json.Decode.succeed UserEntity
+    Json.Decode.succeed (\id meta payload -> { id = id, meta = meta, payload = payload })
         |> decodeAndMap (Json.Decode.field "id" decodeUserId)
         |> decodeAndMap (Json.Decode.field "meta" decodeEntityMeta)
         |> decodeAndMap (Json.Decode.field "payload" decodeUser)
