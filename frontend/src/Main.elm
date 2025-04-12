@@ -4,6 +4,7 @@ import Api
 import Browser
 import Browser.Navigation as Nav
 import Bulma.Classes as B
+import Iso8601
 import Entity.Authority as Authority exposing (AuthorityEntity)
 import Entity.Authority.Derive as Authority
 import Entity.User as User exposing (UserEntity)
@@ -160,6 +161,8 @@ tableAuthorities wAuthorities =
                 [ td [] [ text "ID" ]
                 , td [] [ text "Label" ]
                 , td [] [ text "Level" ]
+                , td [] [ text "Created At" ]
+                , td [] [ text "Updated At" ]
                 ]
             ]
         , tbody [] <|
@@ -175,11 +178,13 @@ tableAuthorities wAuthorities =
 
                 Success authorities ->
                     List.map
-                        (\{ id, payload } ->
+                        (\{ id, meta, payload } ->
                             tr []
                                 [ td [] [ text <| Authority.fromId id ]
                                 , td [] [ text payload.label ]
                                 , td [] [ text (String.fromInt payload.level) ]
+                                , td [] [ text <| Iso8601.fromTime meta.createdAt ]
+                                , td [] [ text <| Iso8601.fromTime meta.updatedAt ]
                                 ]
                         )
                         authorities
@@ -194,6 +199,8 @@ tableUsers wUsers =
                 [ td [] [ text "ID" ]
                 , td [] [ text "Last Name" ]
                 , td [] [ text "First Name" ]
+                , td [] [ text "Created At" ]
+                , td [] [ text "Updated At" ]
                 ]
             ]
         , tbody [] <|
@@ -209,11 +216,13 @@ tableUsers wUsers =
 
                 Success users ->
                     List.map
-                        (\{ id, payload } ->
+                        (\{ id, meta, payload } ->
                             tr []
                                 [ td [] [ text <| User.fromId id ]
                                 , td [] [ text payload.lastName ]
                                 , td [] [ text payload.firstName ]
+                                , td [] [ text <| Iso8601.fromTime meta.createdAt ]
+                                , td [] [ text <| Iso8601.fromTime meta.updatedAt ]
                                 ]
                         )
                         users

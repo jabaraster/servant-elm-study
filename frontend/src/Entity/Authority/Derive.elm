@@ -3,6 +3,7 @@ module Entity.Authority.Derive exposing (..)
 import Array
 import Dict
 import Entity.Authority exposing (..)
+import Entity.Derive exposing (decodeAndMap, decodeEntityMeta)
 import Json.Decode
 import Json.Encode
 import Set
@@ -45,8 +46,9 @@ decodeAuthority =
 
 decodeAuthorityEntity : Json.Decode.Decoder AuthorityEntity
 decodeAuthorityEntity =
-    Json.Decode.succeed (\id payload -> { id = id, payload = payload })
+    Json.Decode.succeed AuthorityEntity
         |> decodeAndMap (Json.Decode.field "id" decodeAuthorityId)
+        |> decodeAndMap (Json.Decode.field "meta" decodeEntityMeta)
         |> decodeAndMap (Json.Decode.field "payload" decodeAuthority)
 
 
@@ -131,11 +133,6 @@ decodeResult errDecoder okDecoder =
                     Json.Decode.fail ("decodeResult: Invalid tag name: " ++ tag)
         )
         (Json.Decode.field "$" Json.Decode.string)
-
-
-decodeAndMap : Json.Decode.Decoder a -> Json.Decode.Decoder (a -> b) -> Json.Decode.Decoder b
-decodeAndMap =
-    Json.Decode.map2 (|>)
 
 
 compareList : (a -> a -> Order) -> List a -> List a -> Order

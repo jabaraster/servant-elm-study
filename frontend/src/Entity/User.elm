@@ -1,5 +1,7 @@
 module Entity.User exposing (..)
 
+import Entity exposing (EntityMeta)
+
 
 type UserId
     = UserId { value : String }
@@ -23,5 +25,6 @@ type alias User =
 
 type alias UserEntity =
     { id : UserId
+    , meta : EntityMeta
     , payload : User
     }

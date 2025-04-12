@@ -14,6 +14,7 @@ import Data.Aeson.TH
 import Data.Text (Text)
 import Data.Time.Clock
 import GHC.Generics
+
 import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)
 import qualified Jabara.Amazonka.DynamoDB.Helper as DH
 
@@ -21,9 +22,7 @@ import Entity.Base
 import Entity.Helper
 
 data Authority = Authority
-  { _authorityCreatedAt :: UTCTime
-  , _authorityUpdatedAt :: UTCTime
-  , _authorityLevel :: Integer
+  { _authorityLevel :: Integer
   , _authorityLabel :: Text
   }
   deriving (Generic, Show, Eq)
@@ -39,4 +38,4 @@ instance FromAttributeValue AuthorityEntity where
     ua <- DH.getUTCTime rec "updatedAt"
     lv <- DH.getInteger rec "level"
     lb <- DH.getText rec "label"
-    return $ Entity (Id i) (Authority ca ua lv lb)
+    return $ Entity (Id i) (EntityMeta ca ua) (Authority lv lb)

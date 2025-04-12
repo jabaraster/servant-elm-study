@@ -1,5 +1,7 @@
 module Entity.Authority exposing (..)
 
+import Entity exposing (EntityMeta)
+
 
 type AuthorityId
     = AuthorityId { value : String }
@@ -23,5 +25,6 @@ type alias Authority =
 
 type alias AuthorityEntity =
     { id : AuthorityId
+    , meta : EntityMeta
     , payload : Authority
     }

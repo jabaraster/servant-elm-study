@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "license": "BSD-3-Clause",
   "scripts": {
-    "format": "yarn run prettier --write src && yarn run elm-format src --yes",
-    "dev": "yarn parcel src/index.html --public-url /public --dist-dir ../backend/public/",
-    "build": "yarn parcel build src/index.html --public-url /public --dist-dir ../backend/public/",
-    "clean": "yarn rimraf elm-stuff && yarn rimraf dist && yarn rimraf .parcel-cache"
+    "format": "prettier --write src && elm-format src --yes",
+    "build": "parcel build src/index.html --public-url /public --dist-dir ../backend/public/",
+    "clean": "rimraf elm-stuff && rimraf dist && rimraf .parcel-cache",
+    "test:format": "elm-format tests --yes",
+    "test": "elm-test",
+
+    "dev": "parcel src/index.html --public-url /public --dist-dir ../backend/public/"
   },
   "devDependencies": {
     "@parcel/transformer-elm": "2.13.2",
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.7",
+    "elm-test": "rtfeldman/node-test-runner",
     "parcel": "^2.13.2",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",

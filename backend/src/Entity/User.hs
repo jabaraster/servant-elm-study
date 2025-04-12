@@ -14,6 +14,7 @@ import Data.Aeson.TH
 import Data.Text (Text)
 import Data.Time.Clock
 import GHC.Generics
+
 import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)
 import qualified Jabara.Amazonka.DynamoDB.Helper as DH
 
@@ -21,9 +22,7 @@ import Entity.Base
 import Entity.Helper
 
 data User = User
-  { _userCreatedAt :: UTCTime
-  , _userUpdatedAt :: UTCTime
-  , _userFirstName :: Text
+  { _userFirstName :: Text
   , _userLastName :: Text
   , _userRegistrationDate :: UTCTime
   }
@@ -41,4 +40,4 @@ instance FromAttributeValue UserEntity where
     fn <- DH.getText rec "firstName"
     ln <- DH.getText rec "lastName"
     rd <- DH.getUTCTime rec "registrationDate"
-    return $ Entity (Id i) (User ca ua fn ln rd)
+    return $ Entity (Id i) (EntityMeta ca ua) (User fn ln rd)
