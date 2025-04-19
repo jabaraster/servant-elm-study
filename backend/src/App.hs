@@ -33,7 +33,9 @@ index.htmlだけ別途埋め込むことにした.
 やってることは、コンパイル時にindex.htmlを読み込んで
 その内容をリテラルとして関数を呼び出すコードを生成している.
 -}
-[Embedded.genIndexHandler| ./public/index.html |]
+[Embedded.genIndexHandler||]
+[Embedded.genLoginCallbackHandler||]
+[Embedded.genLogoutCallbackHandler||]
 
 startApp :: IO ()
 startApp = do
@@ -51,6 +53,8 @@ api = Proxy
 
 type API =
   Get '[HTML] FileContent
+    :<|> "signin-callback" :> Get '[HTML] FileContent
+    :<|> "signout-callback" :> Get '[HTML] FileContent
     :<|> "public" :> Raw
     :<|> "api" :> "users" :> Get '[JSON] [UserEntity]
     :<|> "api" :> "users" :> Capture "userId" Text :> Get '[JSON] (Maybe UserEntity)
@@ -60,6 +64,8 @@ type API =
 server :: Config -> Db -> Server API
 server config db =
   indexHandler
+    :<|> signinCallbackHandler
+    :<|> signoutCallbackHandler
     :<|> ( if config ^. runtimeEnv == Dev
             then serveDirectoryWebApp "public"
             else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む

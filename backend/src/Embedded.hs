@@ -6,6 +6,8 @@
 module Embedded (
   staticFiles,
   genIndexHandler,
+  genLoginCallbackHandler,
+  genLogoutCallbackHandler,
   makeHandlerFromHtml,
   HTML (..),
   FileContent (..),
@@ -55,12 +57,30 @@ genIndexHandler =
     { quoteExp = undefined :: String -> Q Exp
     , quotePat = undefined :: String -> Q Pat
     , quoteType = undefined :: String -> Q Type
-    , quoteDec = genIndexHandlerCore :: String -> Q [Dec]
+    , quoteDec = genHtmlHandler "indexHandler" "./public/index.html" :: String -> Q [Dec]
     }
 
-genIndexHandlerCore :: FilePath -> Q [Dec]
-genIndexHandlerCore pathWithSpace = do
-  let name = mkName "indexHandler"
+genLoginCallbackHandler :: QuasiQuoter
+genLoginCallbackHandler =
+  QuasiQuoter
+    { quoteExp = undefined :: String -> Q Exp
+    , quotePat = undefined :: String -> Q Pat
+    , quoteType = undefined :: String -> Q Type
+    , quoteDec = genHtmlHandler "signinCallbackHandler" "./public/signin-callback.html" :: String -> Q [Dec]
+    }
+
+genLogoutCallbackHandler :: QuasiQuoter
+genLogoutCallbackHandler =
+  QuasiQuoter
+    { quoteExp = undefined :: String -> Q Exp
+    , quotePat = undefined :: String -> Q Pat
+    , quoteType = undefined :: String -> Q Type
+    , quoteDec = genHtmlHandler "signoutCallbackHandler" "./public/signout-callback.html" :: String -> Q [Dec]
+    }
+
+genHtmlHandler :: String -> FilePath -> String -> Q [Dec]
+genHtmlHandler functionName pathWithSpace _ = do
+  let name = mkName functionName
   let path = strip pathWithSpace
   config <- liftIO $ Config.loadConfigWithDefault
   if (config ^. runtimeEnv) == Dev

@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "license": "BSD-3-Clause",
   "scripts": {
-    "format": "prettier --write src && elm-format src --yes",
-    "build": "parcel build src/index.html --public-url /public --dist-dir ../backend/public/",
-    "clean": "rimraf elm-stuff && rimraf dist && rimraf .parcel-cache",
+    "dev": "parcel src/*.html --public-url /public --dist-dir ../backend/public/",
+    "build": "parcel build src/*.html --public-url /public --dist-dir ../backend/public/",
+    "clean": "rimraf elm-stuff && rimraf dist && rimraf .parcel-cache && rimraf ../backend/public/",
     "test:format": "elm-format tests --yes",
     "test": "elm-test",
-
-    "dev": "parcel src/index.html --public-url /public --dist-dir ../backend/public/"
+    "format": "prettier --write src && elm-format src --yes"
   },
   "devDependencies": {
     "@parcel/transformer-elm": "2.13.2",
@@ -19,6 +18,10 @@
     "parcel": "^2.13.2",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
+    "sharp": "^0.33.5",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "oidc-client-ts": "^3.2.0"
   }
 }

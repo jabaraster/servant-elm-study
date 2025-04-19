@@ -22,7 +22,7 @@ import Util exposing (ListElement(..))
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
     Browser.application
         { init = init
@@ -39,22 +39,27 @@ subscriptions _ =
     Sub.none
 
 
-type alias Model =
-    { key : Nav.Key
-    , url : Url.Url
-    , count : Int
-    , authorities : WebData (List AuthorityEntity)
-    , users : WebData (List UserEntity)
+type alias Flags =
+    { singoutUrl : String
     }
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
+type alias Model =
+    { key : Nav.Key
+    , url : Url.Url
+    , authorities : WebData (List AuthorityEntity)
+    , users : WebData (List UserEntity)
+    , flags : Flags
+    }
+
+
+init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
     ( { key = key
       , url = url
-      , count = 0
       , authorities = NotAsked
       , users = NotAsked
+      , flags = flags
       }
     , Cmd.none
     )
@@ -63,12 +68,11 @@ init _ url key =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | Increment
-    | Decrement
     | GetAuthorities
     | GotAuthorities (Result Http.Error (List AuthorityEntity))
     | GetUsers
     | GotUsers (Result Http.Error (List UserEntity))
+    | TryLogout
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,12 +90,6 @@ update msg model =
             ( { model | url = url }
             , Cmd.none
             )
-
-        Increment ->
-            ( { model | count = model.count + 1 }, Cmd.none )
-
-        Decrement ->
-            ( { model | count = model.count - 1 }, Cmd.none )
 
         GetAuthorities ->
             case model.authorities of
@@ -115,16 +113,17 @@ update msg model =
         GotUsers res ->
             ( { model | users = RemoteData.fromResult res }, Cmd.none )
 
+        TryLogout ->
+            ( model
+            , Nav.load model.flags.singoutUrl
+            )
+
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Counter"
+    { title = "Servant + Elm is Happy World!!"
     , body =
-        [ div [ class B.box ]
-            [ button [ class B.button, onClick Decrement ] [ text "-" ]
-            , div [] [ text (String.fromInt model.count) ]
-            , button [ class B.button, onClick Increment ] [ text "+" ]
-            ]
+        [ div [ class B.box ] [ button [ class B.button, onClick TryLogout ] [ text "Logout" ] ]
         , section [ class B.section ]
             [ button
                 (Util.buildList
