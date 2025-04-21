@@ -60,7 +60,7 @@ loadConfig = do
   ePort <- readPortFromEnv
   eRuntimeEnv <- readRuntimeEnvFromEnv
   return $ case (ePort, eRuntimeEnv) of
-    (Right port, Right runtimeEnv) -> Right $ Config port runtimeEnv
+    (Right port', Right runtimeEnv') -> Right $ Config port' runtimeEnv'
     (Left portErr, Left runtimeEnvErr) -> Left [portErr, runtimeEnvErr]
     (Left portErr, _) -> Left [portErr]
     (_, Left runtimeEnvErr) -> Left [runtimeEnvErr]
@@ -90,7 +90,7 @@ readPortFromEnv = lookupEnv "PORT" >>= parsePort
       Just portI ->
         case tryPort portI of
           Nothing -> Left $ "PORT is not a valid port number. [" ++ portS ++ "]"
-          Just port -> Right port
+          Just port' -> Right port'
 
 readRuntimeEnvFromEnv :: IO (Either String RuntimeEnv)
 readRuntimeEnvFromEnv = lookupEnv "RUNTIME_ENV" >>= parseRuntimeEnv

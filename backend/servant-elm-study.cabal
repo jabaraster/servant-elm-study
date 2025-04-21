@@ -30,7 +30,6 @@ library
       Entity.Base
       Entity.Helper
       Entity.User
-      Statics
   other-modules:
       Paths_servant_elm_study
   autogen-modules:

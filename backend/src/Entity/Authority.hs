@@ -12,7 +12,6 @@ import Control.Lens
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Text (Text)
-import Data.Time.Clock
 import GHC.Generics
 
 import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)

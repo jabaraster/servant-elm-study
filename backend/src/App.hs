@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
-module App where
+module App (startApp) where
 
 import Control.Lens hiding ((.=))
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -15,7 +15,6 @@ import Network.Wai.Handler.Warp
 import Servant
 
 import Api
-import Api (Db)
 import Config
 import Embedded
 import Entity
