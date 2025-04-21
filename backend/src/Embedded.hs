@@ -4,34 +4,33 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Embedded (
-  staticFiles,
   genIndexHandler,
   genLoginCallbackHandler,
   genLogoutCallbackHandler,
-  makeHandlerFromHtml,
+  genStaticFileHandler,
   HTML (..),
   FileContent (..),
 ) where
 
 import Control.Lens
+import Control.Monad (forM)
+import Control.Monad.IO.Class
 import Crypto.Hash.MD5 (hashlazy)
+import Data.ByteString.Lazy as Lazy (ByteString, readFile)
+import Data.List (isSuffixOf)
+import Language.Haskell.TH
+import Language.Haskell.TH.Quote
+import Network.HTTP.Media ((//), (/:))
 import Network.Mime (defaultMimeLookup)
-
+import Servant
 import System.Directory (getDirectoryContents)
-import System.FilePath (pathSeparator)
+import System.FilePath ((</>))
 import WaiAppStatic.Storage.Embedded
 
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-
-import Control.Monad.IO.Class
-import Data.ByteString.Lazy as Lazy (ByteString, readFile)
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Network.HTTP.Media ((//), (/:))
-import Servant
 
 import Config
 
@@ -43,11 +42,46 @@ instance Accept HTML where
 instance MimeRender HTML FileContent where
   mimeRender _ = unRaw
 
-makeHandlerFromHtml :: ByteString -> Handler FileContent
-makeHandlerFromHtml = return . FileContent
+genHtmlHandler :: String -> FilePath -> String -> Q [Dec]
+genHtmlHandler functionName pathWithSpace _ = do
+  let name = mkName functionName
+  let path = strip pathWithSpace
+  let sig = SigD name (AppT (ConT ''Handler) (ConT ''FileContent))
+  config <- liftIO $ Config.loadConfigWithDefault
+  if (config ^. runtimeEnv) == Dev
+    then -- 開発中は毎回ファイルを読み込む
 
-dynamicHandler :: FilePath -> Handler FileContent
-dynamicHandler path = do
+      return
+        [ sig
+        , FunD
+            name
+            [ Clause
+                []
+                ( NormalB $ AppE (VarE 'genHtmlHandlerDynamic) (LitE $ StringL path)
+                )
+                [] -- 実装定義部
+            ]
+        ]
+    else do
+      -- 開発以外ではコンパイル時にファイルを埋め込む
+      html <- liftIO $ Prelude.readFile path
+      return
+        [ sig
+        , FunD
+            name
+            [ Clause
+                []
+                ( NormalB $ AppE (VarE 'genHtmlHandlerEmbedded) (LitE $ StringL html)
+                )
+                [] -- 実装定義部
+            ]
+        ]
+
+genHtmlHandlerEmbedded :: ByteString -> Handler FileContent
+genHtmlHandlerEmbedded = return . FileContent
+
+genHtmlHandlerDynamic :: FilePath -> Handler FileContent
+genHtmlHandlerDynamic path = do
   html <- liftIO $ Lazy.readFile $ strip path
   return $ FileContent $ html
 
@@ -78,63 +112,58 @@ genLogoutCallbackHandler =
     , quoteDec = genHtmlHandler "signoutCallbackHandler" "./public/signout-callback.html" :: String -> Q [Dec]
     }
 
-genHtmlHandler :: String -> FilePath -> String -> Q [Dec]
-genHtmlHandler functionName pathWithSpace _ = do
-  let name = mkName functionName
-  let path = strip pathWithSpace
+genStaticFileHandler :: QuasiQuoter
+genStaticFileHandler =
+  QuasiQuoter
+    { quoteExp = undefined
+    , quotePat = undefined
+    , quoteType = undefined
+    , quoteDec = \_ -> genStaticFileHandlerCore
+    }
+
+genStaticFileHandlerCore :: Q [Dec]
+genStaticFileHandlerCore = do
+  let directoryPath = "public"
+  let functionName = mkName "staticFileHandler"
   config <- liftIO $ Config.loadConfigWithDefault
   if (config ^. runtimeEnv) == Dev
-    then do
-      -- 開発中は毎回ファイルを読み込む
-      return
-        [ SigD name (AppT (ConT ''Handler) (ConT ''FileContent)) -- 関数宣言部
-        , FunD
-            name
-            [ Clause
-                []
-                ( NormalB $ AppE (VarE 'dynamicHandler) (LitE $ StringL path)
-                )
-                [] -- 実装定義部
-            ]
-        ]
-    else do
-      -- 開発以外ではコンパイル時にファイルを埋め込む
-      html <- liftIO $ Prelude.readFile path
-      return
-        [ SigD name (AppT (ConT ''Handler) (ConT ''FileContent)) -- 関数宣言部
-        , FunD
-            name
-            [ Clause
-                []
-                ( NormalB $ AppE (VarE 'makeHandlerFromHtml) (LitE $ StringL html)
-                )
-                [] -- 実装定義部
-            ]
-        ]
+    then genStaticFileHandlerDynamic directoryPath functionName
+    else genStaticFileHandlerEmbedded directoryPath functionName
 
-staticFiles :: IO [EmbeddableEntry]
-staticFiles =
-  listStaticFileNames
-    >>= mapM fileToEmb
-
-listStaticFileNames :: IO [FilePath]
-listStaticFileNames =
-  getDirectoryContents "public"
-    >>= return . filter (\x -> x /= "." && x /= ".." && x /= "index.html")
-
-fileToEmb :: FilePath -> IO EmbeddableEntry
-fileToEmb fileName = do
-  let path = "public" ++ [pathSeparator] ++ fileName
-  cnt <- BL.readFile path
+genStaticFileHandlerDynamic :: String -> Name -> Q [Dec]
+genStaticFileHandlerDynamic directoryPath functionName =
   return
-    EmbeddableEntry
-      { eLocation = T.pack fileName
-      , eMimeType = defaultMimeLookup $ T.pack path
-      , eContent = Left (hash cnt, cnt)
-      }
+    [ FunD
+        functionName
+        [ Clause
+            []
+            ( NormalB $ AppE (VarE 'serveDirectoryWebApp) (LitE $ StringL directoryPath)
+            )
+            [] -- 実装定義部
+        ]
+    ]
 
-hash :: BL.ByteString -> T.Text
-hash = T.take 8 . T.decodeUtf8 . B64.encode . hashlazy
+genStaticFileHandlerEmbedded :: String -> Name -> Q [Dec]
+genStaticFileHandlerEmbedded directoryPath functionName = do
+  files <-
+    liftIO
+      ( getDirectoryContents directoryPath
+          >>= return
+            . filter
+              ( \fileName ->
+                  fileName /= "."
+                    && fileName /= ".."
+                    && (not $ isSuffixOf ".html" fileName)
+              )
+      )
+  embeddedFiles <- liftIO $ forM files $ \fileName -> do
+    content <- Prelude.readFile (directoryPath </> fileName)
+    return (fileName, content)
+  let tupleExps = map (\(fp, bs) -> TupE [Just $ LitE $ StringL fp, Just $ LitE $ StringL bs]) embeddedFiles
+  let embeddedFilesListExp = ListE tupleExps
+  let appExp = AppE (VarE 'serveDirectoryEmbedded) embeddedFilesListExp
+  let functionDec = FunD functionName [Clause [] (NormalB appExp) []]
+  return [{-SigD functionName functionType,-} functionDec]
 
 lstrip :: String -> String
 lstrip [] = []

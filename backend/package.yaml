@@ -43,6 +43,8 @@ dependencies:
 - lens
 - amazonka-dynamodb-helper
 - safe-exceptions
+- mtl
+- http-types
 
 ghc-options:
 - -Wall

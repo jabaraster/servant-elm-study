@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Api
+import Api exposing (AuthenticationTokens)
 import Browser
 import Browser.Navigation as Nav
 import Bulma.Classes as B
@@ -41,6 +41,7 @@ subscriptions _ =
 
 type alias Flags =
     { singoutUrl : String
+    , tokens : AuthenticationTokens
     }
 
 
@@ -49,7 +50,8 @@ type alias Model =
     , url : Url.Url
     , authorities : WebData (List AuthorityEntity)
     , users : WebData (List UserEntity)
-    , flags : Flags
+    , tokens : AuthenticationTokens
+    , singoutUrl : String
     }
 
 
@@ -59,7 +61,8 @@ init flags url key =
       , url = url
       , authorities = NotAsked
       , users = NotAsked
-      , flags = flags
+      , tokens = flags.tokens
+      , singoutUrl = flags.singoutUrl
       }
     , Cmd.none
     )
@@ -97,7 +100,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 _ ->
-                    ( { model | authorities = Loading }, Api.getAuthorities GotAuthorities )
+                    ( { model | authorities = Loading }, Api.getAuthorities model.tokens GotAuthorities )
 
         GotAuthorities res ->
             ( { model | authorities = RemoteData.fromResult res }, Cmd.none )
@@ -108,14 +111,14 @@ update msg model =
                     ( model, Cmd.none )
 
                 _ ->
-                    ( { model | users = Loading }, Api.getUsers GotUsers )
+                    ( { model | users = Loading }, Api.getUsers model.tokens GotUsers )
 
         GotUsers res ->
             ( { model | users = RemoteData.fromResult res }, Cmd.none )
 
         TryLogout ->
             ( model
-            , Nav.load model.flags.singoutUrl
+            , Nav.load model.singoutUrl
             )
 
 

@@ -30,6 +30,7 @@ library
       Entity.Base
       Entity.Helper
       Entity.User
+      Statics
   other-modules:
       Paths_servant_elm_study
   autogen-modules:
@@ -50,8 +51,10 @@ library
     , directory
     , filepath
     , http-media
+    , http-types
     , lens
     , mime-types
+    , mtl
     , safe-exceptions
     , servant
     , servant-server
@@ -85,8 +88,10 @@ executable ss
     , directory
     , filepath
     , http-media
+    , http-types
     , lens
     , mime-types
+    , mtl
     , safe-exceptions
     , servant
     , servant-elm-study
@@ -125,8 +130,10 @@ test-suite servant-elm-study-test
     , hspec-wai
     , hspec-wai-json
     , http-media
+    , http-types
     , lens
     , mime-types
+    , mtl
     , safe-exceptions
     , servant
     , servant-elm-study

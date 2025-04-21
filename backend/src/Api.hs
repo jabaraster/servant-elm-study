@@ -7,6 +7,8 @@
 
 module Api (
   Db,
+  JwksUri,
+  JwtToken,
   getDb,
   usersHandler,
   userHandler,
@@ -20,15 +22,17 @@ import Amazonka.DynamoDB.GetItem
 import Amazonka.DynamoDB.Query
 import Amazonka.DynamoDB.Types.AttributeValue
 import Amazonka.Prelude (fromList)
-import Config
-import Control.Exception.Safe (throwString)
+
+-- import Control.Exception.Safe (throwString)
 import Control.Lens
+import qualified Data.Maybe as Maybe
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Jabara.Amazonka.DynamoDB.Helper (FromAttributeValue)
 import qualified Jabara.Amazonka.DynamoDB.Helper as DH
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (Name (..), nameBase)
+
+-- import Language.Haskell.TH
+-- import Language.Haskell.TH.Syntax (Name (..), nameBase)
 import System.Environment
 import System.IO (stdout)
 
@@ -50,6 +54,8 @@ entityTypes =
     { _entityTypesUser = "User"
     , _entityTypesAuthority = "Authority"
     }
+
+type JwtToken = Text
 
 data Db = Db
   { _dbEnv :: Env
@@ -100,10 +106,10 @@ list entityType db = do
   mapM DH.fromAttributeValueUnsafe $ res ^. queryResponse_items
 
 usersHandler :: Db -> IO [UserEntity]
-usersHandler = list $ entityTypes ^. user
+usersHandler db = list (entityTypes ^. user) db
 
-userHandler :: Db -> Id User -> IO (Maybe UserEntity)
-userHandler = getById $ entityTypes ^. user
+userHandler :: Db -> JwtToken -> Id User -> IO (Maybe UserEntity)
+userHandler db token i = getById (entityTypes ^. user) db i
 
 authoritiesHandler :: Db -> IO [AuthorityEntity]
 authoritiesHandler = list $ entityTypes ^. authority
@@ -111,5 +117,16 @@ authoritiesHandler = list $ entityTypes ^. authority
 authortyHandler :: Db -> Id Authority -> IO (Maybe AuthorityEntity)
 authortyHandler = getById $ entityTypes ^. authority
 
-checkAuthentication :: Text -> IO Bool
-checkAuthentication _ = return True
+type JwksUri = Text
+
+checkAuthentication :: Maybe Text -> IO Bool
+checkAuthentication mAuthorizetionBearer =
+  case mAuthorizetionBearer of
+    Nothing -> return False
+    Just _ -> getJwksUri >>= return . Maybe.maybe False (\_ -> True)
+
+getJwksUri :: IO (Maybe JwksUri)
+getJwksUri =
+  lookupEnv "JWKS_URI" >>= \mJwksUri -> case mJwksUri of
+    Nothing -> putStrLn "JWKS_UR not found." >> return Nothing
+    Just jwksUri -> return $ Just $ Text.pack jwksUri
