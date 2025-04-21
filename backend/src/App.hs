@@ -51,29 +51,40 @@ app config db = serve api $ server config db
 api :: Proxy API
 api = Proxy
 
-type API =
+type PublicRoutes =
   Get '[HTML] FileContent
     :<|> "signin-callback" :> Get '[HTML] FileContent
     :<|> "signout-callback" :> Get '[HTML] FileContent
     :<|> "public" :> Raw
-    :<|> "api" :> "users" :> Get '[JSON] [UserEntity]
-    :<|> "api" :> "users" :> Capture "userId" Text :> Get '[JSON] (Maybe UserEntity)
-    :<|> "api" :> "authorities" :> Get '[JSON] [AuthorityEntity]
-    :<|> "api" :> "authorities" :> Capture "authorityId" Text :> Get '[JSON] (Maybe AuthorityEntity)
+
+type ApiRoutes =
+  -- "authentication" :> "status" :> Header "Authorization" Text :> Get '[JSON] Bool
+  -- :<|>
+  "users" :> Get '[JSON] [UserEntity]
+    :<|> "users" :> Capture "userId" Text :> Get '[JSON] (Maybe UserEntity)
+    :<|> "authorities" :> Get '[JSON] [AuthorityEntity]
+    :<|> "authorities" :> Capture "authorityId" Text :> Get '[JSON] (Maybe AuthorityEntity)
+
+type API = PublicRoutes :<|> "api" :> ApiRoutes
 
 server :: Config -> Db -> Server API
 server config db =
-  indexHandler
-    :<|> signinCallbackHandler
-    :<|> signoutCallbackHandler
-    :<|> ( if config ^. runtimeEnv == Dev
-            then serveDirectoryWebApp "public"
-            else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
+  ( indexHandler
+      :<|> signinCallbackHandler
+      :<|> signoutCallbackHandler
+      :<|> ( if config ^. runtimeEnv == Dev
+              then serveDirectoryWebApp "public"
+              else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
+           )
+  )
+    :<|> (
+           -- liftIO1 (\v -> checkAuthentication v)
+           --       :<|>
+           liftIO (usersHandler db)
+            :<|> liftIO1 (userHandler db . Id)
+            :<|> liftIO (authoritiesHandler db)
+            :<|> liftIO1 (authortyHandler db . Id)
          )
-    :<|> liftIO (usersHandler db)
-    :<|> liftIO1 (\idValue -> userHandler db (Id idValue))
-    :<|> liftIO (authoritiesHandler db)
-    :<|> liftIO1 (\idValue -> authortyHandler db (Id idValue))
 
 liftIO1 :: (MonadIO m) => (a -> IO b) -> a -> m b
 liftIO1 f x = liftIO (f x)

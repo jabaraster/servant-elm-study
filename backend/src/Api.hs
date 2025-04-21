@@ -12,6 +12,7 @@ module Api (
   userHandler,
   authoritiesHandler,
   authortyHandler,
+  checkAuthentication,
 ) where
 
 import Amazonka as AWS
@@ -109,3 +110,6 @@ authoritiesHandler = list $ entityTypes ^. authority
 
 authortyHandler :: Db -> Id Authority -> IO (Maybe AuthorityEntity)
 authortyHandler = getById $ entityTypes ^. authority
+
+checkAuthentication :: Text -> IO Bool
+checkAuthentication _ = return True
