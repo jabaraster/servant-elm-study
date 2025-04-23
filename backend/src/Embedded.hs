@@ -19,23 +19,18 @@ module Embedded (
 ) where
 
 import Control.Lens
-import Control.Monad (forM)
 import Control.Monad.IO.Class
 import Data.ByteString.Lazy as Lazy (ByteString, readFile)
 import Data.FileEmbed
-import Data.List (isSuffixOf)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
+import Language.Haskell.TH.Syntax (lift)
 import Network.HTTP.Media ((//), (/:))
 import Servant
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.Text.Encoding as TE
-
 import Config
-import QHelper
 
 {- |
 | ファイル内容を返すための定義
@@ -85,29 +80,25 @@ genHtmlHandlerDynamic functionName htmlPath = do
         ]
     ]
 
-{- | embedded html content.
-| OverloadedStringsプラグマが有効になっている必要がある.
+embedTextContent :: FilePath -> Q Exp
+embedTextContent filePath =
+  liftIO $ Lazy.readFile filePath >>= lift
 
-> indexHtmlHandlerContent :: ByteString
-> indexHtmlHandlerContent = Data.ByteString.Lazy.fromStrict $ Data.Text.encodeUtf8 "HTML文字列"
+{- | embedded html content.
 >
 > indexHtmlHandler :: Handler FileContent
-> indexHtmlHandler = htmlHandlerEmbedded indexHtmlHandlerContent
+> indexHtmlHandler = htmlHandlerEmbedded "<htmlファイル内容のLazy.ByteString表現>"
 -}
 genHtmlHandlerEmbedded :: String -> FilePath -> Q [Dec]
 genHtmlHandlerEmbedded functionName htmlPath = do
-  htmlExp <- QHelper.embedTextContent htmlPath
-  lazyByteStringExp <- [|Lazy.fromStrict $ TE.encodeUtf8 $(return htmlExp)|]
-  let contentVarName = mkName $ functionName ++ "Content"
+  htmlExp <- embedTextContent htmlPath
   return
-    [ SigD contentVarName (ConT ''Lazy.ByteString)
-    , FunD contentVarName [Clause [] (NormalB lazyByteStringExp) []]
-    , htmlHandlerSigniture functionName
+    [ htmlHandlerSigniture functionName
     , FunD
         (mkName functionName)
         [ Clause
             []
-            ( NormalB $ AppE (VarE 'htmlHandlerEmbedded) (VarE contentVarName)
+            ( NormalB $ AppE (VarE 'htmlHandlerEmbedded) htmlExp
             )
             []
         ]
@@ -237,10 +228,6 @@ listStaticFileNames directoryPath =
         ( \fileName ->
             fileName /= "."
               && fileName /= ".."
-              -- && ( (isSuffixOf ".js" fileName)
-              --       || (isSuffixOf ".css" fileName)
-              --       || (isSuffixOf ".map" fileName)
-              --    )
         )
 
 {- |

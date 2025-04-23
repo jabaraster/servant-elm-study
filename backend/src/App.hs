@@ -21,30 +21,22 @@ import Entity
 import Entity.Authority
 import Entity.User
 
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-
-{-
-index.htmlをバイナリに埋め込むための工夫
-serveDirectoryWith $(mkSettings Embedded.staticFiles)
-を使えればよかったのだが、ルーティングの関係でどうしてもうまくいかなかったので
-index.htmlだけ別途埋め込むことにした.
-やってることは、コンパイル時にindex.htmlを読み込んで
-その内容をリテラルとして関数を呼び出すコードを生成している.
--}
 [Embedded.genIndexHandler||]
-[Embedded.genStaticFileHandler||]
 [Embedded.genLoginCallbackHandler||]
 [Embedded.genLogoutCallbackHandler||]
 [Embedded.genShortHtmlHandler||]
+[Embedded.genStaticFileHandler||]
 
 startApp :: IO ()
 startApp = do
   config <- Config.loadConfigWithDefault
   db <- Api.getDb config
   let portNum = Config.getPort $ config ^. port
-  putStrLn $ "Listening on port " ++ show portNum
+  putStrLn "----------------------------------------------"
+  putStrLn "- start 'servant-elm-study' server"
+  putStrLn $ "- Listening port : " ++ show portNum
+  putStrLn $ "- Runtime env    : " ++ (show (config ^. runtimeEnv))
+  putStrLn "----------------------------------------------"
   run portNum $ app db
 
 app :: Db -> Application
