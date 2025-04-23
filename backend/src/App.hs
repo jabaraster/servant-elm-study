@@ -21,6 +21,10 @@ import Entity
 import Entity.Authority
 import Entity.User
 
+import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+
 {-
 index.htmlをバイナリに埋め込むための工夫
 serveDirectoryWith $(mkSettings Embedded.staticFiles)
@@ -33,6 +37,7 @@ index.htmlだけ別途埋め込むことにした.
 [Embedded.genStaticFileHandler||]
 [Embedded.genLoginCallbackHandler||]
 [Embedded.genLogoutCallbackHandler||]
+[Embedded.genShortHtmlHandler||]
 
 startApp :: IO ()
 startApp = do
@@ -52,12 +57,12 @@ type API =
   ( Get '[HTML] FileContent
       :<|> "signin-callback" :> Get '[HTML] FileContent
       :<|> "signout-callback" :> Get '[HTML] FileContent
+      :<|> "short" :> Get '[HTML] FileContent
       :<|> "public" :> Raw
   )
     :<|> "api"
       :> ( "authentication" :> "status" :> HeaderAuth :> Get '[JSON] Bool
             :<|> "users" :> Get '[JSON] [UserEntity]
-            -- :<|> "users" :> HeaderAuth :> Capture "userId" Text :> Get '[JSON] (Maybe UserEntity)
             :<|> "authorities" :> Get '[JSON] [AuthorityEntity]
             :<|> "authorities" :> Capture "authorityId" Text :> Get '[JSON] (Maybe AuthorityEntity)
          )
@@ -69,11 +74,8 @@ server db =
   ( indexHandler
       :<|> signinCallbackHandler
       :<|> signoutCallbackHandler
+      :<|> shortHtmlHandler
       :<|> staticFileHandler
-      --  ( if config ^. runtimeEnv == Dev
-      --         then serveDirectoryWebApp "public"
-      --         else serveDirectoryWith $(mkSettings Embedded.staticFiles) -- index.html以外の静的ファイルもバイナリに埋め込む
-      --      )
   )
     :<|> ( ( \auth -> do
               res <- liftIO $ Api.checkAuthentication auth
@@ -82,9 +84,6 @@ server db =
                 else throwError $ err401 {errBody = "Unauthorized"}
            )
             :<|> liftIO (Api.usersHandler db)
-            -- :<|> ( \auth idValue ->
-            --         liftIO (Api.userHandler db auth (Id idValue))
-            --      )
             :<|> liftIO (Api.authoritiesHandler db)
             :<|> liftIO1 (Api.authortyHandler db . Id)
          )

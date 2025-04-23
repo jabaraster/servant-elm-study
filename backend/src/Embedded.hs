@@ -12,6 +12,8 @@ module Embedded (
   genLoginCallbackHandler,
   genLogoutCallbackHandler,
   genStaticFileHandler,
+  genShortHtmlHandler,
+  genHtmlHandlerEmbedded,
   HTML (..),
   FileContent (..),
 ) where
@@ -20,6 +22,7 @@ import Control.Lens
 import Control.Monad (forM)
 import Control.Monad.IO.Class
 import Data.ByteString.Lazy as Lazy (ByteString, readFile)
+import Data.FileEmbed
 import Data.List (isSuffixOf)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -28,13 +31,17 @@ import Servant
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 
+import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.Text.Encoding as TE
+
 import Config
+import QHelper
 
 {- |
 | ファイル内容を返すための定義
 |
 -}
-newtype FileContent = FileContent {unRaw :: ByteString}
+newtype FileContent = FileContent {unRaw :: Lazy.ByteString}
 
 data HTML = HTML
 instance Accept HTML where
@@ -50,51 +57,83 @@ instance MimeRender HTML FileContent where
 -}
 genHtmlHandler :: String -> FilePath -> String -> Q [Dec]
 genHtmlHandler functionName pathWithSpace _ = do
-  let name = mkName functionName
   let path = strip pathWithSpace
-  let sig = SigD name (AppT (ConT ''Handler) (ConT ''FileContent))
   config <- liftIO $ Config.loadConfigWithDefault
   if (config ^. runtimeEnv) == Dev
-    then -- 開発中は毎回ファイルを読み込む
+    then genHtmlHandlerDynamic functionName path
+    else genHtmlHandlerEmbedded functionName path
 
-      return
-        [ sig
-        , FunD
-            name
-            [ Clause
-                []
-                ( NormalB $ AppE (VarE 'genHtmlHandlerDynamic) (LitE $ StringL path)
-                )
-                [] -- 実装定義部
-            ]
+htmlHandlerSigniture :: String -> Dec
+htmlHandlerSigniture functionName = SigD (mkName functionName) (AppT (ConT ''Handler) (ConT ''FileContent))
+
+{- | dynami load html file.
+
+> indexHtmlHandler :: Handler FileContent
+> indexHtmlHandler = htmlHandlerDynamic "static/index.html"
+-}
+genHtmlHandlerDynamic :: String -> FilePath -> Q [Dec]
+genHtmlHandlerDynamic functionName htmlPath = do
+  return
+    [ htmlHandlerSigniture functionName
+    , FunD
+        (mkName functionName)
+        [ Clause
+            []
+            ( NormalB $ AppE (VarE 'htmlHandlerDynamic) (LitE $ StringL htmlPath)
+            )
+            []
         ]
-    else do
-      -- 開発以外ではコンパイル時にファイルを埋め込む
-      html <- liftIO $ Prelude.readFile path
-      return
-        [ sig
-        , FunD
-            name
-            [ Clause
-                []
-                ( NormalB $ AppE (VarE 'genHtmlHandlerEmbedded) (LitE $ StringL html)
-                )
-                [] -- 実装定義部
-            ]
+    ]
+
+{- | embedded html content.
+| OverloadedStringsプラグマが有効になっている必要がある.
+
+> indexHtmlHandlerContent :: ByteString
+> indexHtmlHandlerContent = Data.ByteString.Lazy.fromStrict $ Data.Text.encodeUtf8 "HTML文字列"
+>
+> indexHtmlHandler :: Handler FileContent
+> indexHtmlHandler = htmlHandlerEmbedded indexHtmlHandlerContent
+-}
+genHtmlHandlerEmbedded :: String -> FilePath -> Q [Dec]
+genHtmlHandlerEmbedded functionName htmlPath = do
+  htmlExp <- QHelper.embedTextContent htmlPath
+  lazyByteStringExp <- [|Lazy.fromStrict $ TE.encodeUtf8 $(return htmlExp)|]
+  let contentVarName = mkName $ functionName ++ "Content"
+  return
+    [ SigD contentVarName (ConT ''Lazy.ByteString)
+    , FunD contentVarName [Clause [] (NormalB lazyByteStringExp) []]
+    , htmlHandlerSigniture functionName
+    , FunD
+        (mkName functionName)
+        [ Clause
+            []
+            ( NormalB $ AppE (VarE 'htmlHandlerEmbedded) (VarE contentVarName)
+            )
+            []
         ]
+    ]
 
-genHtmlHandlerEmbedded :: ByteString -> Handler FileContent
-genHtmlHandlerEmbedded = return . FileContent
-
-genHtmlHandlerDynamic :: FilePath -> Handler FileContent
-genHtmlHandlerDynamic path = do
+htmlHandlerDynamic :: FilePath -> Handler FileContent
+htmlHandlerDynamic path = do
   html <- liftIO $ Lazy.readFile $ strip path
   return $ FileContent $ html
+
+htmlHandlerEmbedded :: ByteString -> Handler FileContent
+htmlHandlerEmbedded = return . FileContent
 
 {- |
 | HTMLページを返すハンドラを生成する関数群.
 |
 -}
+genShortHtmlHandler :: QuasiQuoter
+genShortHtmlHandler =
+  QuasiQuoter
+    { quoteExp = undefined :: String -> Q Exp
+    , quotePat = undefined :: String -> Q Pat
+    , quoteType = undefined :: String -> Q Type
+    , quoteDec = genHtmlHandler "shortHtmlHandler" "./public/short.html" :: String -> Q [Dec]
+    }
+
 genIndexHandler :: QuasiQuoter
 genIndexHandler =
   QuasiQuoter
@@ -124,7 +163,6 @@ genLogoutCallbackHandler =
 
 {- |
 | HTML以外の静的ファイルを返すハンドラを生成する関数群.
-| 画像などのバイナリが埋め込めないのが辛い.
 |
 -}
 genStaticFileHandler :: QuasiQuoter
@@ -149,6 +187,11 @@ genStaticFileHandlerCore = do
     then genStaticFileHandlerDynamic signiture directoryPath functionName
     else genStaticFileHandlerEmbedded signiture directoryPath functionName
 
+{- | dynamic loading static file.
+
+> staticFileHandler :: ServerT Raw m
+> staticFileHandler = sreveDirectoryWebApp "static"
+-}
 genStaticFileHandlerDynamic :: Dec -> String -> Name -> Q [Dec]
 genStaticFileHandlerDynamic signiture directoryPath functionName =
   return
@@ -163,14 +206,24 @@ genStaticFileHandlerDynamic signiture directoryPath functionName =
         ]
     ]
 
+{- | embedded statci file content.
+
+> staticFileHandler :: ServerT Raw m
+> staticFileHandler = serveDirectoryEmbedded [
+>     ("app.js", "<ByteString literal>")
+>   , ("app.css", "<ByteString literal>")
+>   ]
+-}
 genStaticFileHandlerEmbedded :: Dec -> String -> Name -> Q [Dec]
 genStaticFileHandlerEmbedded signiture directoryPath functionName = do
   files <- liftIO $ listStaticFileNames directoryPath
-  embeddedFiles <- liftIO $ forM files $ \fileName -> do
-    liftIO $ putStrLn $ "!!! file [" ++ fileName ++ "] embedding..."
-    content <- Prelude.readFile (directoryPath </> fileName)
-    return (fileName, content)
-  let tupleExps = map (\(fp, bs) -> TupE [Just $ LitE $ StringL fp, Just $ LitE $ StringL bs]) embeddedFiles
+  tupleExps <-
+    mapM
+      ( \fileName -> do
+          bsExp <- Data.FileEmbed.embedFile (directoryPath </> fileName)
+          return $ TupE [Just $ LitE $ StringL fileName, Just bsExp]
+      )
+      files
   let embeddedFilesListExp = ListE tupleExps
   let appExp = AppE (VarE 'serveDirectoryEmbedded) embeddedFilesListExp
   let functionDec = FunD functionName [Clause [] (NormalB appExp) []]
@@ -184,10 +237,10 @@ listStaticFileNames directoryPath =
         ( \fileName ->
             fileName /= "."
               && fileName /= ".."
-              && ( (isSuffixOf ".js" fileName)
-                    || (isSuffixOf ".css" fileName)
-                    || (isSuffixOf ".map" fileName)
-                 )
+              -- && ( (isSuffixOf ".js" fileName)
+              --       || (isSuffixOf ".css" fileName)
+              --       || (isSuffixOf ".map" fileName)
+              --    )
         )
 
 {- |

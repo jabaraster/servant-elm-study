@@ -45,6 +45,7 @@ dependencies:
 - safe-exceptions
 - mtl
 - http-types
+- file-embed
 
 ghc-options:
 - -Wall

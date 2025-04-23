@@ -30,6 +30,7 @@ library
       Entity.Base
       Entity.Helper
       Entity.User
+      QHelper
   other-modules:
       Paths_servant_elm_study
   autogen-modules:
@@ -48,6 +49,7 @@ library
     , bytestring
     , cryptohash-md5
     , directory
+    , file-embed
     , filepath
     , http-media
     , http-types
@@ -85,6 +87,7 @@ executable ss
     , bytestring
     , cryptohash-md5
     , directory
+    , file-embed
     , filepath
     , http-media
     , http-types
@@ -124,6 +127,7 @@ test-suite servant-elm-study-test
     , bytestring
     , cryptohash-md5
     , directory
+    , file-embed
     , filepath
     , hspec
     , hspec-wai
