@@ -21,12 +21,6 @@ import Entity
 import Entity.Authority
 import Entity.User
 
-[Embedded.genIndexHandler||]
-[Embedded.genLoginCallbackHandler||]
-[Embedded.genLogoutCallbackHandler||]
-[Embedded.genShortHtmlHandler||]
-[Embedded.genStaticFileHandler||]
-
 startApp :: IO ()
 startApp = do
   config <- Config.loadConfigWithDefault
@@ -63,11 +57,11 @@ type HeaderAuth = Header "Authorization" Text
 
 server :: Db -> Server API
 server db =
-  ( indexHandler
-      :<|> signinCallbackHandler
-      :<|> signoutCallbackHandler
-      :<|> shortHtmlHandler
-      :<|> staticFileHandler
+  ( $(Embedded.defHtmlHandler "public/index.html")
+      :<|> $(Embedded.defHtmlHandler "public/signin-callback.html")
+      :<|> $(Embedded.defHtmlHandler "public/signout-callback.html")
+      :<|> $(Embedded.defHtmlHandler "public/short.html")
+      :<|> $(Embedded.defStaticFileHandler "public")
   )
     :<|> ( ( \auth -> do
               res <- liftIO $ Api.checkAuthentication auth

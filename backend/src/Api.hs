@@ -68,8 +68,8 @@ getDb config = do
   logger' <- AWS.newLogger (if config ^. runtimeEnv == Dev then AWS.Debug else AWS.Info) stdout
   discoveredEnv <- AWS.newEnv AWS.discover
 
-  let env = discoveredEnv {AWS.logger = logger', AWS.region = AWS.Tokyo}
-  return $ Db env ("servant-elm-study-" <> Text.pack (show $ config ^. runtimeEnv))
+  let env' = discoveredEnv {AWS.logger = logger', AWS.region = AWS.Tokyo}
+  return $ Db env' ("servant-elm-study-" <> Text.pack (show $ config ^. runtimeEnv))
 
 getById ::
   (FromAttributeValue a) =>

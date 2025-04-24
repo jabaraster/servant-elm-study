@@ -14,6 +14,8 @@ module Embedded (
   genStaticFileHandler,
   genShortHtmlHandler,
   genHtmlHandlerEmbedded,
+  defHtmlHandler,
+  defStaticFileHandler,
   HTML (..),
   FileContent (..),
 ) where
@@ -31,6 +33,40 @@ import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 
 import Config
+
+{- | 指定のパスのHTMLファイルの中身を返すHandlerを生成する.
+| RuntimeEnvがProdの場合はHTMLの中身をソースコード中に埋め込む.
+|
+-}
+defHtmlHandler :: FilePath -> Q Exp
+defHtmlHandler htmlPath = do
+  config <- liftIO $ Config.loadConfigWithDefault
+  if config ^. runtimeEnv == Dev
+    then [|htmlHandlerDynamic htmlPath|]
+    else do
+      htmlExp <- embedTextContent htmlPath
+      [|htmlHandlerEmbedded $(return htmlExp)|]
+
+{- | 指定のディレクトリ直下のファイルの中身を返すHandlerを生成する.
+| RuntimeEnvがProdの場合はファイルの中身をソースコード中に埋め込む.
+|
+-}
+defStaticFileHandler :: FilePath -> Q Exp
+defStaticFileHandler directoryPath = do
+  config <- liftIO $ Config.loadConfigWithDefault
+  if config ^. runtimeEnv == Dev
+    then [|serveDirectoryWebApp directoryPath|]
+    else do
+      files <- liftIO $ listStaticFileNames directoryPath
+      tupleExps <-
+        mapM
+          ( \fileName -> do
+              bsExp <- Data.FileEmbed.embedFile (directoryPath </> fileName)
+              return $ TupE [Just $ LitE $ StringL fileName, Just bsExp]
+          )
+          files
+      let embeddedFilesListExp = ListE tupleExps
+      [|serveDirectoryEmbedded $(return embeddedFilesListExp)|]
 
 {- |
 | ファイル内容を返すための定義
